@@ -1,0 +1,6 @@
+.phone{max-width:420px;margin:16px auto;background:var(--card);border:1px solid var(--bd);border-radius:22px;min-height:640px;display:flex;flex-direction:column;overflow:hidden}
+.scr{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow-y:auto}
+.nav{display:flex;border-top:1px solid var(--bd)}.nav button{flex:1;border:0;background:none;padding:12px 0;cursor:pointer;color:var(--mu);font-size:13px}.nav .on{color:var(--pr);font-weight:700}
+.ch{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--bd);border-radius:10px;cursor:pointer}.ch.sel{border-color:var(--pr);background:var(--sf)}
+.msg{padding:9px 12px;border-radius:14px;max-width:85%}.msg.b{background:var(--sf);align-self:flex-start}.msg.u{background:var(--pr);color:var(--pt);align-self:flex-end}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
