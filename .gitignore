@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+alamin/node_modules/
+
+# Production builds
+dist/
+dist-ssr/
+dev-dist/
+alamin/dist/
+alamin/dist-ssr/
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.local
+
+# Local AI agent skills & lockfiles
+.agents/
+skills-lock.json
+
+# System & editor files
+.DS_Store
+Thumbs.db
+
