@@ -218,86 +218,88 @@ export function Prog(p) {
     </div>
 
     <!-- Per-Strand Mastery Section -->
-    <div style=${{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <div style=${{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div class="row sp">
-        <h3 style=${{ fontSize: 15, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+        <h3 style=${{ fontSize: 16, textTransform: "uppercase", letterSpacing: "0.03em" }}>
           ${p.T("Learning Strands Mastery")}
         </h3>
-        <span class="badge on" style=${{ fontSize: 11 }}>${p.T("DepEd Target: 75%")}</span>
+        <span class="badge on" style=${{ fontSize: 11.5 }}>${p.T("DepEd Target: 75%")}</span>
       </div>
 
-      ${strandStats.map((s, idx) => {
-        const IconComponent = STRAND_ICONS[idx % STRAND_ICONS.length] || BookOpen;
-        const hasAttempts = s.attemptsCount > 0;
-        const isPassing = hasAttempts && s.avg >= 75;
+      <div class="strands-responsive-grid">
+        ${strandStats.map((s, idx) => {
+          const IconComponent = STRAND_ICONS[idx % STRAND_ICONS.length] || BookOpen;
+          const hasAttempts = s.attemptsCount > 0;
+          const isPassing = hasAttempts && s.avg >= 75;
 
-        return h`
-          <div 
-            class="prog-strand-card"
-            style=${{ cursor: "pointer" }}
-            onClick=${() => p.go("topics", { strand: idx, strand_id: s.strand_id })}
-          >
-            <!-- Header: Icon, Code & Title, Percentage Badge -->
-            <div class="row sp" style=${{ alignItems: "flex-start" }}>
-              <div class="row" style=${{ gap: 10, flex: 1 }}>
-                <div class="strand-icon-box" style=${{ 
-                  width: 36, 
-                  height: 36, 
-                  background: isPassing ? "var(--ok-bg)" : "var(--sf)",
-                  color: isPassing ? "var(--ok)" : "var(--pr)"
-                }}>
-                  <${IconComponent} size=${18} />
-                </div>
-                <div style=${{ flex: 1 }}>
-                  <div class="row" style=${{ gap: 6, marginBottom: 2 }}>
-                    <span class="badge" style=${{ fontSize: 11, padding: "1px 7px" }}>
-                      ${s.code || `LS${idx + 1}`}
-                    </span>
-                    <b style=${{ fontSize: 13.5 }}>
-                      ${p.T(s.rawName || s.name.replace(/^Strand \d+ – /, ""))}
-                    </b>
+          return h`
+            <div 
+              class="prog-strand-card"
+              style=${{ cursor: "pointer" }}
+              onClick=${() => p.go("topics", { strand: idx, strand_id: s.strand_id })}
+            >
+              <!-- Header: Icon, Code & Title, Percentage Badge -->
+              <div class="row sp" style=${{ alignItems: "flex-start" }}>
+                <div class="row" style=${{ gap: 10, flex: 1 }}>
+                  <div class="strand-icon-box" style=${{ 
+                    width: 38, 
+                    height: 38, 
+                    background: isPassing ? "var(--ok-bg)" : "var(--sf)",
+                    color: isPassing ? "var(--ok)" : "var(--pr)"
+                  }}>
+                    <${IconComponent} size=${19} />
                   </div>
-                  <span class="mu" style=${{ fontSize: 11.5 }}>
-                    ${hasAttempts ? `${s.attemptsCount} ${p.T("attempt recorded")}` : p.T("No attempts recorded yet")}
-                  </span>
+                  <div style=${{ flex: 1 }}>
+                    <div class="row" style=${{ gap: 6, marginBottom: 2 }}>
+                      <span class="badge" style=${{ fontSize: 11, padding: "1px 7px" }}>
+                        ${s.code || `LS${idx + 1}`}
+                      </span>
+                      <b style=${{ fontSize: 13.5 }}>
+                        ${p.T(s.rawName || s.name.replace(/^Strand \d+ – /, ""))}
+                      </b>
+                    </div>
+                    <span class="mu" style=${{ fontSize: 11.5 }}>
+                      ${hasAttempts ? `${s.attemptsCount} ${p.T("attempt recorded")}` : p.T("No attempts recorded yet")}
+                    </span>
+                  </div>
                 </div>
+
+                <!-- Score Badge -->
+                <span class="badge ${isPassing ? "on" : hasAttempts ? "" : ""}" style=${{ 
+                  fontSize: 12.5, 
+                  fontWeight: 700, 
+                  padding: "3px 9px",
+                  color: isPassing ? "var(--ok)" : hasAttempts ? "var(--pr)" : "var(--mu)"
+                }}>
+                  ${hasAttempts ? `${s.avg}%` : "0%"}
+                </span>
               </div>
 
-              <!-- Score Badge -->
-              <span class="badge ${isPassing ? "on" : hasAttempts ? "" : ""}" style=${{ 
-                fontSize: 12.5, 
-                fontWeight: 700, 
-                padding: "3px 9px",
-                color: isPassing ? "var(--ok)" : hasAttempts ? "var(--pr)" : "var(--mu)"
-              }}>
-                ${hasAttempts ? `${s.avg}%` : "0%"}
-              </span>
-            </div>
+              <!-- Horizontal Progress Bar -->
+              <div class="bar" style=${{ height: 8 }}>
+                <i style=${{ 
+                  width: Math.max(hasAttempts ? s.avg : 0, 0) + "%",
+                  background: isPassing ? "var(--ok)" : "var(--pr)"
+                }}></i>
+              </div>
 
-            <!-- Horizontal Progress Bar -->
-            <div class="bar" style=${{ height: 8 }}>
-              <i style=${{ 
-                width: Math.max(hasAttempts ? s.avg : 0, 0) + "%",
-                background: isPassing ? "var(--ok)" : "var(--pr)"
-              }}></i>
+              <!-- Footer: Status Pill & Practice Link -->
+              <div class="row sp" style=${{ fontSize: 11.5 }}>
+                <span style=${{ 
+                  fontWeight: 600, 
+                  color: isPassing ? "var(--ok)" : hasAttempts ? "var(--bad)" : "var(--mu)" 
+                }}>
+                  ${isPassing ? p.T("Mastery Target Met") : hasAttempts ? p.T("Below 75% Target") : p.T("Review Recommended")}
+                </span>
+                <span style=${{ color: "var(--pr)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 2 }}>
+                  <span>${p.T("Practice")}</span>
+                  <${ChevronRight} size=${13} />
+                </span>
+              </div>
             </div>
-
-            <!-- Footer: Status Pill & Practice Link -->
-            <div class="row sp" style=${{ fontSize: 11.5 }}>
-              <span style=${{ 
-                fontWeight: 600, 
-                color: isPassing ? "var(--ok)" : hasAttempts ? "var(--bad)" : "var(--mu)" 
-              }}>
-                ${isPassing ? p.T("Mastery Target Met") : hasAttempts ? p.T("Below 75% Target") : p.T("Review Recommended")}
-              </span>
-              <span style=${{ color: "var(--pr)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 2 }}>
-                <span>${p.T("Practice")}</span>
-                <${ChevronRight} size=${13} />
-              </span>
-            </div>
-          </div>
-        `;
-      })}
+          `;
+        })}
+      </div>
     </div>
 
     <!-- Assessment History Section -->

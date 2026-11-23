@@ -75,36 +75,45 @@ export function Chat(p) {
     }
   };
 
-  return h`<div style=${{ display: "flex", flexDirection: "column", height: "100%", gap: 12 }}>
+  return h`<div style=${{ display: "flex", flexDirection: "column", minHeight: "80vh", maxWidth: 920, margin: "0 auto", width: "100%", gap: 14 }}>
     <!-- Header -->
-    <div class="row sp" style=${{ paddingBottom: 4 }}>
+    <!-- Chat Header Bar -->
+    <div class="row sp" style=${{ 
+      paddingBottom: 10, 
+      borderBottom: "1px solid var(--bd)",
+      alignItems: "center"
+    }}>
       <button 
         type="button"
-        class="btn" 
-        style=${{ padding: "6px 12px", fontSize: 13 }}
+        class="ios-round-btn" 
         onClick=${() => p.go("home")}
+        title="Back to Home"
       >
-        <${ChevronLeft} size=${16} />
-        <span>Back</span>
+        <${ChevronLeft} size=${18} />
       </button>
 
-      <div class="row" style=${{ gap: 8 }}>
-        <div style=${{ 
-          width: 28, 
-          height: 28, 
-          borderRadius: 8, 
-          background: "var(--sf)", 
-          color: "var(--pr)", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center" 
-        }}>
-          <${Sparkles} size=${16} />
+      <div class="row" style=${{ gap: 10, alignItems: "center" }}>
+        <img 
+          src="/chatbot-profile-image.png" 
+          alt="Alamin AI Tutor" 
+          style=${{ 
+            width: 38, 
+            height: 38, 
+            borderRadius: "50%", 
+            objectFit: "cover", 
+            boxShadow: "var(--shadow-xs)",
+            border: "1.5px solid var(--sf)"
+          }} 
+        />
+        <div>
+          <b style=${{ fontSize: 15, display: "block", lineHeight: 1.2 }}>Alamin AI Tutor</b>
+          <span style=${{ fontSize: 11.5, color: p.online ? "var(--ok)" : "var(--mu)", fontWeight: 500 }}>
+            ${p.online ? "● Active Study Companion" : "○ Offline"}
+          </span>
         </div>
-        <b style=${{ fontSize: 14.5 }}>AI Study Tutor</b>
       </div>
 
-      <${p.Badge}/>
+      <div style=${{ width: 38 }}></div>
     </div>
 
     <!-- Chat Message List -->
@@ -119,7 +128,9 @@ export function Chat(p) {
       ${m.map(x => h`
         <div class="msg-row ${x.b ? "bot" : "user"}">
           <div class="avatar ${x.b ? "bot" : "user"}">
-            ${x.b ? h`<${Bot} size=${16} />` : h`<${User} size=${16} />`}
+            ${x.b 
+              ? h`<img src="/chatbot-profile-image.png" alt="Bot" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />` 
+              : h`<${User} size=${16} />`}
           </div>
           <div 
             class="msg ${x.b ? "b" : "u"}" 
@@ -130,7 +141,9 @@ export function Chat(p) {
 
       ${loading && h`
         <div class="msg-row bot">
-          <div class="avatar bot"><${Bot} size=${16} /></div>
+          <div class="avatar bot">
+            <img src="/chatbot-profile-image.png" alt="Bot" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+          </div>
           <div class="msg b" style=${{ display: "flex", alignItems: "center", gap: 6, fontStyle: "italic", opacity: 0.85 }}>
             <${Sparkles} size=${14} />
             <span>Naghahanda ng paliwanag ang assistant...</span>

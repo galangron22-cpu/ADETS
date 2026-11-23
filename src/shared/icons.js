@@ -58,6 +58,9 @@ export {
   UserX,
   UserPlus,
   SlidersHorizontal,
-  ExternalLink
+  ExternalLink,
+  Sun,
+  Moon,
+  Settings
 } from "lucide-react";
 

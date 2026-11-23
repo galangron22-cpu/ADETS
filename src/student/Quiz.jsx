@@ -87,7 +87,7 @@ export function Quiz(p) {
 
   const isLastQuestion = i === qq.length - 1;
 
-  return h`<div style=${{ display: "flex", flexDirection: "column", gap: 14 }}>
+  return h`<div style=${{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 840, margin: "0 auto", width: "100%" }}>
     <!-- Header with Question Tracker & Timer -->
     <div class="row sp" style=${{ padding: "4px 0" }}>
       <div class="row" style=${{ gap: 8 }}>

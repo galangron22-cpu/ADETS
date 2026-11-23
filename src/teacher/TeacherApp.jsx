@@ -82,41 +82,29 @@ export default function TeacherApp() {
   };
 
   return h`<div>
-    <header class="top">
-      <div class="row" style=${{ gap: 8 }}>
-        <div style=${{ 
-          width: 28, 
-          height: 28, 
-          borderRadius: 8, 
-          background: "var(--sf)", 
-          color: "var(--pr)", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center" 
-        }}>
-          <${isAdminPath ? ShieldCheck : GraduationCap} size=${17} />
+    ${profile ? h`
+      <header class="top">
+        <div class="row" style=${{ gap: 8 }}>
+          <div style=${{ 
+            width: 28, 
+            height: 28, 
+            borderRadius: 8, 
+            background: "var(--sf)", 
+            color: "var(--pr)", 
+            display: "flex", 
+            alignItems: "center", 
+            justifyContent: "center" 
+          }}>
+            <${isAdminPath ? ShieldCheck : GraduationCap} size=${17} />
+          </div>
+          <b>${isAdminPath ? "ALAMIN · Admin Portal" : "ALAMIN · Teacher Portal"}</b>
         </div>
-        <b>${isAdminPath ? "ALAMIN · Admin Portal" : "ALAMIN · Teacher Portal"}</b>
-      </div>
 
-      <button 
-        type="button"
-        class="pill" 
-        onClick=${toggleTheme}
-        title="Toggle Theme"
-      >
-        <${Sparkles} size=${13} />
-        <span>Theme</span>
-      </button>
-
-      ${profile && h`
         <span class="pill" style=${{ background: "var(--sf)", color: "var(--pr)", fontWeight: 700 }}>
           <${profile.role === "Admin" ? ShieldCheck : GraduationCap} size=${13} />
           <span>${profile.role}: ${profile.display_name}</span>
         </span>
-      `}
 
-      ${profile && h`
         <button 
           type="button"
           class="pill" 
@@ -126,20 +114,8 @@ export default function TeacherApp() {
           <${LogOut} size=${13} />
           <span>Log Out</span>
         </button>
-      `}
-
-      ${isAdminPath && h`
-        <a class="pill" href="/teacher">
-          <span>Teacher Portal</span>
-          <${ArrowRight} size=${13} />
-        </a>
-      `}
-
-      <a class="pill" href="/">
-        <${ArrowLeft} size=${13} />
-        <span>Learner Portal</span>
-      </a>
-    </header>
+      </header>
+    ` : null}
 
     ${profile ? h`
       <${TeacherLayout} 

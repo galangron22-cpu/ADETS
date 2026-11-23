@@ -194,72 +194,7 @@ export default function StudentApp() {
     setLang
   };
 
-  return h`<div>
-    <header class="top">
-      <div class="row" style=${{ gap: 8 }}>
-        <div style=${{ 
-          width: 28, 
-          height: 28, 
-          borderRadius: 8, 
-          background: "var(--sf)", 
-          color: "var(--pr)", 
-          display: "flex", 
-          alignItems: "center", 
-          justifyContent: "center" 
-        }}>
-          <${GraduationCap} size=${18} />
-        </div>
-        <b>ALAMIN · ${T("Learner Portal")}</b>
-      </div>
-
-      <button 
-        type="button"
-        class="pill" 
-        onClick=${() => setLang(lang === "en" ? "fil" : "en")}
-        title="Toggle Language (English / Filipino)"
-      >
-        <${Globe} size=${13} />
-        <span>${lang === "en" ? "EN | fil" : "en | FIL"}</span>
-      </button>
-
-      <button 
-        type="button"
-        class="pill" 
-        onClick=${() => setOnline(!online)}
-        title="Toggle online/offline simulator for testing"
-      >
-        <${online ? Wifi : WifiOff} size=${14} color=${online ? "var(--ok)" : "var(--bad)"} />
-        <span>${T(online ? "Online" : "Offline")}</span>
-      </button>
-
-      ${installPrompt && h`
-        <button 
-          type="button"
-          class="pill" 
-          style=${{ background: "var(--pr)", color: "#ffffff", fontWeight: 700 }} 
-          onClick=${handleInstallApp}
-        >
-          <${Download} size=${14} />
-          <span>Install App</span>
-        </button>
-      `}
-
-      <button 
-        type="button"
-        class="pill" 
-        onClick=${toggleTheme}
-        title="Toggle Theme"
-      >
-        <${Sparkles} size=${13} />
-        <span>Theme</span>
-      </button>
-
-      <a class="pill" href="/teacher">
-        <span>Teacher Portal</span>
-        <${ArrowRight} size=${13} />
-      </a>
-    </header>
-
+  return h`<div class="student-root">
     <${StudentLayout} ...${P} scr=${scr}/>
     ${toast && h`<div class="toast">${toast}</div>`}
   </div>`;
