@@ -108,17 +108,24 @@
   border-radius: var(--radius);
   padding: 18px 20px;
   background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: var(--shadow-sm);
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  transition: var(--transition);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .stat-card:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--pr);
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+:root[data-theme="dark"] .stat-card:hover {
+  background: rgba(29, 42, 74, 0.92);
 }
 
 .stat-icon {
@@ -162,8 +169,10 @@
   border-radius: var(--radius);
   padding: 16px 18px;
   background: var(--card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.2s ease, background 0.2s ease;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -172,7 +181,12 @@
 .q-card:hover {
   border-color: var(--pr);
   box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+:root[data-theme="dark"] .q-card:hover {
+  background: rgba(29, 42, 74, 0.92);
 }
 
 /* Status Badges */
