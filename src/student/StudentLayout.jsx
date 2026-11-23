@@ -293,12 +293,14 @@ export function StudentLayout(p) {
       </div>
 
       <!-- Learning Strands Section Header -->
-      <div class="row sp" style=${{ marginTop: 6, alignItems: "center" }}>
-        <div>
+      <div class="row sp" style=${{ marginTop: 6, alignItems: "center", gap: 10 }}>
+        <div style=${{ minWidth: 0, flex: 1 }}>
           <h3 class="ios-section-label">${T("Learning Strands")}</h3>
-          <span class="mu" style=${{ fontSize: 12.5 }}>5 Core Competencies for Elementary & Secondary ALS</span>
+          <span class="mu" style=${{ fontSize: 12.5, display: "block", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            5 Core Competencies for Elementary & Secondary ALS
+          </span>
         </div>
-        <span class="badge" style=${{ fontSize: 11.5 }}>
+        <span class="badge" style=${{ fontSize: 11.5, whiteSpace: "nowrap", flexShrink: 0, padding: "3px 10px" }}>
           ${filteredStrands.length} Available
         </span>
       </div>
