@@ -144,43 +144,54 @@ export function ProfileModal(p) {
               <${isDark ? Moon : Sun} size=${17} color="var(--pr)" />
               <b style=${{ fontSize: 14 }}>Appearance / Theme</b>
             </div>
-            <button 
-              type="button" 
-              class="pill" 
-              onClick=${toggleTheme}
-              style=${{ fontSize: 12.5, fontWeight: 600 }}
-            >
-              <${isDark ? Sun : Moon} size=${13} />
-              <span>Switch to ${isDark ? "Light" : "Dark"}</span>
-            </button>
+            <div class="ios-segmented" style=${{ width: "auto", display: "inline-flex", padding: 3 }}>
+              <button 
+                type="button" 
+                class="ios-segmented-btn ${!isDark ? "active" : ""}" 
+                onClick=${() => { if (isDark) toggleTheme(); }}
+                title="Light Mode"
+                aria-label="Light Mode"
+                style=${{ padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <${Sun} size=${16} />
+              </button>
+              <button 
+                type="button" 
+                class="ios-segmented-btn ${isDark ? "active" : ""}" 
+                onClick=${() => { if (!isDark) toggleTheme(); }}
+                title="Dark Mode"
+                aria-label="Dark Mode"
+                style=${{ padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+              >
+                <${Moon} size=${16} />
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- Language Setting: English / Filipino -->
         <div class="card" style=${{ padding: "14px 16px", borderRadius: 18, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div class="row sp" style=${{ alignItems: "center" }}>
-            <div class="row" style=${{ gap: 8, alignItems: "center" }}>
-              <${Globe} size=${17} color="var(--pr)" />
-              <b style=${{ fontSize: 14 }}>Language / Wika</b>
-            </div>
-            <div class="ios-segmented" style=${{ width: "auto" }}>
-              <button 
-                type="button" 
-                class="ios-segmented-btn ${lang === "en" ? "active" : ""}" 
-                onClick=${() => setLang("en")}
-                style=${{ padding: "6px 12px", fontSize: 12 }}
-              >
-                English
-              </button>
-              <button 
-                type="button" 
-                class="ios-segmented-btn ${lang === "fil" ? "active" : ""}" 
-                onClick=${() => setLang("fil")}
-                style=${{ padding: "6px 12px", fontSize: 12 }}
-              >
-                Filipino
-              </button>
-            </div>
+          <div class="row" style=${{ gap: 8, alignItems: "center" }}>
+            <${Globe} size=${17} color="var(--pr)" />
+            <b style=${{ fontSize: 14, whiteSpace: "nowrap" }}>Language / Wika</b>
+          </div>
+          <div class="ios-segmented" style=${{ width: "100%", margin: 0 }}>
+            <button 
+              type="button" 
+              class="ios-segmented-btn ${lang === "en" ? "active" : ""}" 
+              onClick=${() => setLang("en")}
+              style=${{ flex: 1, padding: "7px 12px", fontSize: 13, textAlign: "center" }}
+            >
+              English
+            </button>
+            <button 
+              type="button" 
+              class="ios-segmented-btn ${lang === "fil" ? "active" : ""}" 
+              onClick=${() => setLang("fil")}
+              style=${{ flex: 1, padding: "7px 12px", fontSize: 13, textAlign: "center" }}
+            >
+              Filipino
+            </button>
           </div>
         </div>
 
@@ -191,11 +202,11 @@ export function ProfileModal(p) {
           </b>
           <div class="row sp" style=${{ fontSize: 13 }}>
             <span>Offline Reviewers</span>
-            <b>${saved.length} Package${saved.length === 1 ? "" : "s"}</b>
+            <b>${saved.length}</b>
           </div>
           <div class="row sp" style=${{ fontSize: 13, marginTop: 4 }}>
             <span>Quizzes Completed</span>
-            <b>${att.length} Assessment${att.length === 1 ? "" : "s"}</b>
+            <b>${att.length}</b>
           </div>
         </div>
 
