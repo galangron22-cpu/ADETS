@@ -188,38 +188,7 @@ export function StudentLayout(p) {
         `}
       </div>
 
-      <!-- Category Filter Pills (Horizontal Scrollable) -->
-      <div>
-        <div class="row sp" style=${{ marginBottom: 8, alignItems: "center" }}>
-          <h3 class="ios-section-label">Select Learning Strand</h3>
-          ${searchQuery && h`
-            <span style=${{ fontSize: 12, color: "var(--pr)", cursor: "pointer", fontWeight: 600 }} onClick=${() => setSearchQuery("")}>
-              Clear Search
-            </span>
-          `}
-        </div>
-
-        <div class="ios-pills-scroll">
-          <button 
-            type="button" 
-            class="ios-pill-tab ${activeFilter === "all" ? "active" : ""}" 
-            onClick=${() => setActiveFilter("all")}
-          >
-            All Strands
-          </button>
-          ${strands.map((s, idx) => h`
-            <button 
-              type="button" 
-              class="ios-pill-tab ${activeFilter === String(idx) ? "active" : ""}" 
-              onClick=${() => setActiveFilter(activeFilter === String(idx) ? "all" : String(idx))}
-            >
-              ${s.code || `LS${idx + 1}`}
-            </button>
-          `)}
-        </div>
-      </div>
-
-      <!-- Featured Desktop 2-Column Grid (Hero Card + AI Assistant Card) -->
+      <!-- Featured Desktop 2-Column Grid (Hero Card + AI Assistant Card - Relocated to Search Bar) -->
       <div class="desktop-hero-grid">
         
         <!-- Hero Featured Card (TripGlide Style) -->
@@ -290,6 +259,37 @@ export function StudentLayout(p) {
           </div>
         </div>
 
+      </div>
+
+      <!-- Category Filter Pills (Horizontal Scrollable) -->
+      <div>
+        <div class="row sp" style=${{ marginBottom: 8, alignItems: "center" }}>
+          <h3 class="ios-section-label">Select Learning Strand</h3>
+          ${searchQuery && h`
+            <span style=${{ fontSize: 12, color: "var(--pr)", cursor: "pointer", fontWeight: 600 }} onClick=${() => setSearchQuery("")}>
+              Clear Search
+            </span>
+          `}
+        </div>
+
+        <div class="ios-pills-scroll">
+          <button 
+            type="button" 
+            class="ios-pill-tab ${activeFilter === "all" ? "active" : ""}" 
+            onClick=${() => setActiveFilter("all")}
+          >
+            All Strands
+          </button>
+          ${strands.map((s, idx) => h`
+            <button 
+              type="button" 
+              class="ios-pill-tab ${activeFilter === String(idx) ? "active" : ""}" 
+              onClick=${() => setActiveFilter(activeFilter === String(idx) ? "all" : String(idx))}
+            >
+              ${s.code || `LS${idx + 1}`}
+            </button>
+          `)}
+        </div>
       </div>
 
       <!-- Learning Strands Section Header -->
