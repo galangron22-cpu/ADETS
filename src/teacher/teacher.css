@@ -104,11 +104,11 @@
 }
 
 .stat-card {
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   border-radius: var(--radius);
   padding: 18px 20px;
   background: var(--card);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-sm);
   display: flex;
   align-items: flex-start;
   gap: 16px;
@@ -116,7 +116,7 @@
 }
 
 .stat-card:hover {
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   border-color: var(--pr);
   transform: translateY(-2px);
 }
@@ -158,10 +158,11 @@
 
 /* Question bank cards & list */
 .q-card {
-  border: 1px solid var(--bd);
+  border: 1.5px solid var(--bd);
   border-radius: var(--radius);
   padding: 16px 18px;
   background: var(--card);
+  box-shadow: var(--shadow-sm);
   transition: var(--transition);
   display: flex;
   flex-direction: column;
@@ -170,7 +171,8 @@
 
 .q-card:hover {
   border-color: var(--pr);
-  box-shadow: var(--shadow-xs);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 /* Status Badges */

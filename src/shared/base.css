@@ -1,5 +1,5 @@
 :root {
-  --bg: #f4f6fb;
+  --bg: #edf2f7;
   --card: #ffffff;
   --tx: #14213d;
   --mu: #667085;
@@ -10,11 +10,11 @@
   --ok-bg: #ecfdf3;
   --bad: #d92d20;
   --bad-bg: #fef3f2;
-  --bd: #d9dee8;
-  --sf: #eaf1ff;
-  --shadow-xs: 0 1px 2px rgba(20, 33, 61, 0.04);
-  --shadow-sm: 0 2px 6px -1px rgba(20, 33, 61, 0.06), 0 1px 4px -1px rgba(20, 33, 61, 0.04);
-  --shadow-md: 0 10px 20px -3px rgba(20, 33, 61, 0.08), 0 4px 8px -2px rgba(20, 33, 61, 0.04);
+  --bd: #d0d8e8;
+  --sf: #f0f5ff;
+  --shadow-xs: 0 1px 3px rgba(20, 33, 61, 0.05), 0 1px 2px rgba(20, 33, 61, 0.03);
+  --shadow-sm: 0 0 0 1px rgba(20, 33, 61, 0.03), 0 4px 20px -2px rgba(20, 33, 61, 0.08), 0 2px 6px -1px rgba(20, 33, 61, 0.04);
+  --shadow-md: 0 0 0 1px rgba(20, 33, 61, 0.04), 0 12px 32px -4px rgba(20, 33, 61, 0.12), 0 4px 12px -2px rgba(20, 33, 61, 0.06);
   --radius-sm: 8px;
   --radius: 12px;
   --radius-lg: 18px;
