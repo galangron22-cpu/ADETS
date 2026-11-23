@@ -166,29 +166,7 @@ export function StudentLayout(p) {
         </div>
       </div>
 
-      <!-- iOS Pill Search Bar (Full Width, No Cramped Filter Button) -->
-      <div class="ios-search-wrap">
-        <${Search} size=${18} color="var(--mu)" style=${{ flexShrink: 0 }} />
-        <input 
-          class="ios-search-input" 
-          placeholder="Search learning strands, topics, practice sets..." 
-          value=${searchQuery}
-          onInput=${e => setSearchQuery(e.target.value)}
-        />
-        ${searchQuery && h`
-          <button 
-            type="button" 
-            class="ios-round-btn" 
-            style=${{ width: 28, height: 28, border: "none", background: "transparent" }}
-            onClick=${() => setSearchQuery("")}
-            title="Clear"
-          >
-            <${X} size=${15} />
-          </button>
-        `}
-      </div>
-
-      <!-- Featured Desktop 2-Column Grid (Hero Card + AI Assistant Card - Relocated to Search Bar) -->
+      <!-- Featured Desktop 2-Column Grid (Hero Card + AI Assistant Card - At the Top of Search Bar) -->
       <div class="desktop-hero-grid">
         
         <!-- Hero Featured Card (TripGlide Style) -->
@@ -259,6 +237,28 @@ export function StudentLayout(p) {
           </div>
         </div>
 
+      </div>
+
+      <!-- iOS Pill Search Bar (Full Width, No Cramped Filter Button) -->
+      <div class="ios-search-wrap">
+        <${Search} size=${18} color="var(--mu)" style=${{ flexShrink: 0 }} />
+        <input 
+          class="ios-search-input" 
+          placeholder="Search learning strands, topics, practice sets..." 
+          value=${searchQuery}
+          onInput=${e => setSearchQuery(e.target.value)}
+        />
+        ${searchQuery && h`
+          <button 
+            type="button" 
+            class="ios-round-btn" 
+            style=${{ width: 28, height: 28, border: "none", background: "transparent" }}
+            onClick=${() => setSearchQuery("")}
+            title="Clear"
+          >
+            <${X} size=${15} />
+          </button>
+        `}
       </div>
 
       <!-- Category Filter Pills (Horizontal Scrollable) -->
