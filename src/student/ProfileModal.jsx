@@ -14,7 +14,8 @@ import {
   Layers, 
   CheckCircle2, 
   Award,
-  RefreshCw 
+  RefreshCw,
+  Pencil
 } from "../shared/icons.js";
 
 export function ProfileModal(p) {
@@ -94,15 +95,52 @@ export function ProfileModal(p) {
           border: "1px solid var(--bd)"
         }}>
           <div class="row" style=${{ gap: 14, alignItems: "center" }}>
-            <div class="ios-avatar-btn" style=${{ width: 52, height: 52, fontSize: 18, flexShrink: 0 }}>
-              ${(user || "L").charAt(0).toUpperCase()}
+            <!-- Avatar with Pen Edit Badge -->
+            <div style=${{ position: "relative", flexShrink: 0 }}>
+              <div 
+                class="ios-avatar-btn" 
+                style=${{ width: 56, height: 56, fontSize: 20, cursor: "pointer" }}
+                onClick=${() => setEditingName(true)}
+                title="Edit name"
+              >
+                ${(user || "L").charAt(0).toUpperCase()}
+              </div>
+              <button 
+                type="button" 
+                onClick=${() => setEditingName(true)}
+                title="Edit name"
+                aria-label="Edit name"
+                style=${{
+                  position: "absolute",
+                  bottom: -2,
+                  right: -2,
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "var(--pr)",
+                  color: "#ffffff",
+                  border: "2px solid var(--card-solid, #ffffff)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 6px rgba(0, 0, 0, 0.22)",
+                  padding: 0,
+                  transition: "transform 0.15s ease",
+                }}
+                onMouseEnter=${e => e.currentTarget.style.transform = "scale(1.15)"}
+                onMouseLeave=${e => e.currentTarget.style.transform = "scale(1)"}
+              >
+                <${Pencil} size=${11} />
+              </button>
             </div>
+
             <div style=${{ flex: 1, minWidth: 0 }}>
               ${editingName ? h`
                 <form onSubmit=${handleSaveName} style=${{ display: "flex", gap: 6, alignItems: "center" }}>
                   <input 
                     class="in" 
-                    style=${{ padding: "6px 10px", fontSize: 14, height: 34 }}
+                    style=${{ padding: "6px 10px", fontSize: 14, height: 34, flex: 1 }}
                     value=${newName}
                     onInput=${e => setNewName(e.target.value)}
                     autoFocus
@@ -112,23 +150,24 @@ export function ProfileModal(p) {
                     class="btn p" 
                     style=${{ padding: "6px 12px", height: 34, fontSize: 12.5 }}
                     disabled=${savingName || !newName.trim()}
+                    title="Save name"
                   >
                     <${Check} size=${14} />
                   </button>
-                </form>
-              ` : h`
-                <div class="row sp" style=${{ alignItems: "center" }}>
-                  <b style=${{ fontSize: 17, color: "var(--tx)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    ${user}
-                  </b>
                   <button 
                     type="button" 
-                    style=${{ background: "none", border: "none", color: "var(--pr)", fontSize: 12.5, fontWeight: 600, cursor: "pointer", textDecoration: "underline" }}
-                    onClick=${() => setEditingName(true)}
+                    class="btn" 
+                    style=${{ padding: "6px 10px", height: 34, fontSize: 12.5 }}
+                    onClick=${() => { setEditingName(false); setNewName(user || ""); }}
+                    title="Cancel"
                   >
-                    Edit
+                    <${X} size=${14} />
                   </button>
-                </div>
+                </form>
+              ` : h`
+                <b style=${{ fontSize: 17, color: "var(--tx)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>
+                  ${user}
+                </b>
               `}
               <span class="mu" style=${{ fontSize: 12, display: "block", marginTop: 2 }}>
                 DepEd ALS Candidate · Valenzuela City

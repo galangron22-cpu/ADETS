@@ -32,6 +32,8 @@ export {
   Plus,
   Trash2,
   Edit3,
+  Pencil,
+  Pen,
   Search,
   Send,
   LayoutDashboard,
