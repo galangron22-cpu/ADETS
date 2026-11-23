@@ -81,6 +81,7 @@ function apiDevServerPlugin() {
 }
 
 export default defineConfig({
+  envPrefix: ["VITE_", "SUPABASE_"],
   plugins: [
     apiDevServerPlugin(),
     react(),
