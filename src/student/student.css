@@ -263,8 +263,7 @@
   box-shadow: 0 4px 14px rgba(20, 33, 61, 0.25);
 }
 
-:root[data-theme="dark"] .ios-pill-tab.active,
-:root:not([data-theme="light"]) .ios-pill-tab.active {
+:root[data-theme="dark"] .ios-pill-tab.active {
   background: #ffffff;
   color: #0e1424;
   border-color: #ffffff;
@@ -662,8 +661,7 @@
   transform: scale(0.97);
 }
 
-:root[data-theme="dark"] .ios-bottom-cta-btn,
-:root:not([data-theme="light"]) .ios-bottom-cta-btn {
+:root[data-theme="dark"] .ios-bottom-cta-btn {
   background: #ffffff;
   color: #0e1424;
   box-shadow: 0 12px 28px rgba(255, 255, 255, 0.25);

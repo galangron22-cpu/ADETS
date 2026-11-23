@@ -23,9 +23,9 @@ export function ProfileModal(p) {
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState(user || "");
   const [savingName, setSavingName] = useState(false);
-  const [theme, toggleTheme] = useTheme();
+  const [theme, toggleTheme, setTheme] = useTheme();
 
-  const isDark = theme === "dark" || (typeof document !== "undefined" && document.documentElement.getAttribute("data-theme") === "dark");
+  const isDark = theme === "dark";
 
   const handleSaveName = async (e) => {
     if (e) e.preventDefault();
@@ -148,7 +148,7 @@ export function ProfileModal(p) {
               <button 
                 type="button" 
                 class="ios-segmented-btn ${!isDark ? "active" : ""}" 
-                onClick=${() => { if (isDark) toggleTheme(); }}
+                onClick=${() => setTheme("light")}
                 title="Light Mode"
                 aria-label="Light Mode"
                 style=${{ padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
@@ -158,7 +158,7 @@ export function ProfileModal(p) {
               <button 
                 type="button" 
                 class="ios-segmented-btn ${isDark ? "active" : ""}" 
-                onClick=${() => { if (!isDark) toggleTheme(); }}
+                onClick=${() => setTheme("dark")}
                 title="Dark Mode"
                 aria-label="Dark Mode"
                 style=${{ padding: "6px 14px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
