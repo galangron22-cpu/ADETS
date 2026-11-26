@@ -1,3 +1,7 @@
+/**
+ * Assessment package builder and publisher (`Sets`).
+ * Bundles approved questions per ALS strand into draft reviewer sets and lets Admins publish them for learner offline sync.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";

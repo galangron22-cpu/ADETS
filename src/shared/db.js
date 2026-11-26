@@ -1,3 +1,4 @@
+// IndexedDB offline persistence layer (`alamin_offline_db`) for cached key-value settings, downloaded quiz bundles, and sync queue.
 // IndexedDB helper for offline storage (question sets, local attempts, sync queue)
 import { useState, useEffect } from "react";
 

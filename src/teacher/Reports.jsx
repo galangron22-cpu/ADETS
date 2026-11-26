@@ -1,3 +1,8 @@
+/**
+ * Division analytics and reporting dashboard (`Rep`).
+ * Filters quiz performance by strand and date range, renders a Chart.js dual-axis performance chart,
+ * and exports learner summaries as CSV or printable PDF reports.
+ */
 import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";

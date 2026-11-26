@@ -1,3 +1,8 @@
+/**
+ * Question Bank & Review Queue manager (`QBank`).
+ * Lets educators search and filter ALS questions by status/strand/difficulty,
+ * inspect 4-choice answer keys inline, and launch the Question Editor or AI Generator.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";

@@ -1,3 +1,7 @@
+/**
+ * Administrator user account governance panel (`Acc`).
+ * Allows Admins to filter profiles by role/search query and suspend or reactivate accounts via `/api/admin/accounts/:id/status`.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";

@@ -1,3 +1,7 @@
+/**
+ * GET /api/question-sets/:id/download
+ * Packages a published question set with its ordered Approved questions and choices into an offline-ready bundle.
+ */
 import { getSupabase, json } from "../../_lib/supabase.js";
 
 export default async function handler(req, res) {

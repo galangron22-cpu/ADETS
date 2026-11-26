@@ -1,3 +1,8 @@
+/**
+ * Main layout shell and screen router for signed-in ALS learners.
+ * Renders the top desktop/mobile brand bar, floating bottom navigation dock, Home strand explorer
+ * (with mastery card, AI tutor launcher, search & filter pills), Topics/Sets picker, and active view screens.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { S, TOP, sets_of } from "../shared/data.js";
@@ -27,8 +32,7 @@ import {
   Sparkles,
   Layers,
   Search,
-  X,
-  GraduationCap
+  X
 } from "../shared/icons.js";
 
 // Distinctive icons for each of the 5 ALS Strands
@@ -94,12 +98,16 @@ export function StudentLayout(p) {
     <header class="desktop-app-bar">
       <div class="desktop-app-bar-inner">
         <div class="desktop-brand" onClick=${() => go("home")}>
-          <div class="desktop-brand-icon">
-            <${GraduationCap} size=${20} />
+          <div class="brand-logo-wrap sm">
+            <img
+              src="/alamin_logo_cutout.png"
+              alt="ALAMIN"
+              class="brand-logo-img"
+              style=${{ height: 42 }}
+            />
           </div>
-          <div>
-            <b style=${{ fontSize: 16, letterSpacing: "normal" }}>ALAMIN</b>
-            <span style=${{ fontSize: 11, color: "var(--mu)", display: "block" }}>DepEd ALS Learner Portal</span>
+          <div class="desktop-brand-meta">
+            <span class="desktop-brand-portal">DepEd ALS Learner Portal</span>
           </div>
         </div>
 
@@ -151,6 +159,26 @@ export function StudentLayout(p) {
     });
 
     body = h`
+      <!-- Mobile Brand Bar (visible only below 768px; desktop uses top app bar) -->
+      <div class="mobile-brand-row">
+        <div class="brand-logo-wrap sm" onClick=${() => go("home")} style=${{ cursor: "pointer" }}>
+          <img
+            src="/alamin_logo_cutout.png"
+            alt="ALAMIN"
+            class="brand-logo-img"
+            style=${{ height: 34 }}
+          />
+        </div>
+        <div 
+          class="ios-avatar-btn" 
+          style=${{ width: 40, height: 40, fontSize: 15 }}
+          onClick=${() => setShowProfile(true)} 
+          title="Open Profile & Settings"
+        >
+          ${(user || "L").charAt(0).toUpperCase()}
+        </div>
+      </div>
+
       <!-- iOS Header: Greeting & Profile Avatar -->
       <div class="ios-header">
         <div>
@@ -158,7 +186,7 @@ export function StudentLayout(p) {
           <p class="ios-greeting-sub">Welcome to Alamin ALS · Division of Valenzuela</p>
         </div>
         <div 
-          class="ios-avatar-btn" 
+          class="ios-avatar-btn desktop-greeting-avatar" 
           onClick=${() => setShowProfile(true)} 
           title="Open Profile & Settings"
         >

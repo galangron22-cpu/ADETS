@@ -1,3 +1,7 @@
+/**
+ * PATCH /api/admin/question-sets/:id/publish
+ * Transitions a question set to 'Published' status (Administrator-only governance action).
+ */
 import { getUserFromRequest, json } from "../../../_lib/supabase.js";
 
 export default async function handler(req, res) {

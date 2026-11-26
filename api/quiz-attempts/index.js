@@ -1,3 +1,7 @@
+/**
+ * GET /api/quiz-attempts
+ * Retrieves completed quiz attempt history scoped to the signed-in learner (or filtered by learner_id for staff).
+ */
 import { getUserFromRequest, json } from "../_lib/supabase.js";
 
 export default async function handler(req, res) {

@@ -1,3 +1,6 @@
+/**
+ * Centralized barrel re-exporting all Lucide React UI icons used across Student, Teacher, and Admin portals.
+ */
 export {
   BookOpen,
   FlaskConical,

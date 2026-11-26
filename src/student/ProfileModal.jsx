@@ -1,3 +1,8 @@
+/**
+ * Learner profile & settings modal.
+ * Supports display-name editing via Supabase Auth, light/dark theme switching,
+ * English/Filipino language toggling, offline storage counts, and sign-out.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { supabase } from "../shared/supabase.js";

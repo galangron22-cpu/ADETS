@@ -1,3 +1,8 @@
+/**
+ * Question authoring & Admin approval/rejection editor (`Editor`).
+ * Allows creating or editing 4-choice ALS items with explanations, enforcing rejection reasons,
+ * and saving items as Approved, Draft, or Rejected.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";

@@ -1,9 +1,13 @@
+/**
+ * Vite build, React, PWA Workbox service worker, and local Vercel-style `/api/*` dev-server configuration.
+ */
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 import fs from "fs";
 import path from "path";
 
+/** Vite middleware plugin that routes `/api/*` requests to serverless handler files during local development. */
 function apiDevServerPlugin() {
   return {
     name: "api-dev-server",
@@ -87,10 +91,16 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      includeAssets: ["alamin_favicon.png", "alamin_logo_cutout.png", "icon-192.png", "icon-512.png"],
       devOptions: {
         enabled: true
       },
-      workbox: { globPatterns: ["**/*.{js,css,html,svg,png}"], navigateFallback: "/index.html" },
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,png}"],
+        navigateFallback: "/index.html",
+        ignoreURLParametersMatching: [/^v$/],
+        cleanupOutdatedCaches: true
+      },
       manifest: {
         name: "Alamin – ALS Reviewer",
         short_name: "Alamin",

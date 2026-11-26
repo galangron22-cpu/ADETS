@@ -1,3 +1,6 @@
+/**
+ * Sanitizes and converts AI-generated Markdown text into safe HTML fragments for the Study Assistant chat UI.
+ */
 // Helper to parse and render formatted markdown in chat and reviewer notes
 export function formatMarkdown(raw) {
   if (!raw || typeof raw !== "string") return "";

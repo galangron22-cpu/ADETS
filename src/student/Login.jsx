@@ -1,8 +1,11 @@
+/**
+ * Learner authentication screen supporting Email/Password sign-in, account registration,
+ * bilingual language toggle, and navigation to the Teacher/Educator portal.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { supabase } from "../shared/supabase.js";
 import { 
-  GraduationCap, 
   Mail, 
   Lock, 
   User, 
@@ -126,22 +129,16 @@ export function Login(p) {
       
       <!-- Top Branding -->
       <div style=${{ textAlign: "center", marginBottom: 4 }}>
-        <div style=${{ 
-          width: 56, 
-          height: 56, 
-          borderRadius: 16, 
-          background: "var(--sf)", 
-          color: "var(--pr)", 
-          display: "inline-flex", 
-          alignItems: "center", 
-          justifyContent: "center",
-          marginBottom: 12,
-          boxShadow: "var(--shadow-xs)"
-        }}>
-          <${GraduationCap} size=${28} />
+        <div class="brand-logo-wrap lg" style=${{ marginBottom: 10 }}>
+          <img
+            src="/alamin_logo_cutout.png"
+            alt="ALAMIN"
+            class="brand-logo-img"
+            style=${{ height: 84 }}
+          />
         </div>
-        <h1 style=${{ fontSize: 24, fontWeight: 800, color: "var(--tx)", letterSpacing: "-0.03em" }}>ALAMIN</h1>
-        <p class="mu" style=${{ margin: "4px 0 0 0", fontSize: 13.5, lineHeight: 1.45 }}>
+        <h1 class="sr-only">ALAMIN</h1>
+        <p class="mu" style=${{ margin: "2px 0 0 0", fontSize: 13.5, lineHeight: 1.45 }}>
           DepEd Alternative Learning System (ALS)<br />
           A&E Reviewer with AI Study Assistant
         </p>

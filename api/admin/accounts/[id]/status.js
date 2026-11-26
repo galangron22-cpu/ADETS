@@ -1,3 +1,7 @@
+/**
+ * PATCH /api/admin/accounts/:id/status
+ * Allows Administrators to update a user's account_status (Active/Suspended) or role (Learner/Teacher/Admin).
+ */
 import { getUserFromRequest, json } from "../../../_lib/supabase.js";
 
 async function parseBody(req) {

@@ -1,3 +1,7 @@
+/**
+ * GET /api/question-sets
+ * Lists published practice question sets with strand metadata and question counts (filterable by strand_id).
+ */
 import { getSupabase, json } from "../_lib/supabase.js";
 
 export default async function handler(req, res) {

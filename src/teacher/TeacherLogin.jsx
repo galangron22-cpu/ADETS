@@ -1,9 +1,11 @@
+/**
+ * Educator and Administrator authentication screen (`TeacherLogin`).
+ * Supports Admin login on `/admin` and Teacher login/registration with educator role verification on `/teacher`.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { supabase } from "../shared/supabase.js";
 import { 
-  ShieldCheck, 
-  GraduationCap, 
   Mail, 
   Lock, 
   User, 
@@ -144,21 +146,15 @@ export function TeacherLogin({ onLogin }) {
       
       <!-- Top Branding -->
       <div style=${{ textAlign: "center", marginBottom: 4 }}>
-        <div style=${{ 
-          width: 56, 
-          height: 56, 
-          borderRadius: 16, 
-          background: "var(--sf)", 
-          color: "var(--pr)", 
-          display: "inline-flex", 
-          alignItems: "center", 
-          justifyContent: "center",
-          marginBottom: 12,
-          boxShadow: "var(--shadow-xs)"
-        }}>
-          <${isAdminPath ? ShieldCheck : GraduationCap} size=${28} />
+        <div class="brand-logo-wrap lg" style=${{ marginBottom: 10 }}>
+          <img
+            src="/alamin_logo_cutout.png"
+            alt="ALAMIN"
+            class="brand-logo-img"
+            style=${{ height: 76 }}
+          />
         </div>
-        <h2 style=${{ fontSize: 22, fontWeight: 800, letterSpacing: "-0.02em" }}>
+        <h2 style=${{ fontSize: 21, fontWeight: 800, letterSpacing: "-0.02em" }}>
           ${isAdminPath ? "Administrator Sign In" : "Teacher & Educator Portal"}
         </h2>
         <p class="mu" style=${{ margin: "4px 0 0 0", fontSize: 13 }}>

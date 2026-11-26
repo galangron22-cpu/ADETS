@@ -1,3 +1,4 @@
+// Bilingual English-Filipino translation dictionary (`L`), offline fallback ALS strands/topics/questions, and time/set helpers.
 // Shared sample data (strands, topics, questions, sets). Replace with API/IndexedDB data.
 export const L = {
   fil: {

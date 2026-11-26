@@ -1,3 +1,7 @@
+/**
+ * GET /api/health
+ * Health-check endpoint verifying server uptime and live Supabase connectivity.
+ */
 import { getSupabase, json } from "./_lib/supabase.js";
 
 export default async function handler(req, res) {

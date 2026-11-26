@@ -1,3 +1,7 @@
+/**
+ * GET /api/progress
+ * Computes authenticated learner mastery averages per ALS learning strand and overall progress.
+ */
 import { getUserFromRequest, json } from "./_lib/supabase.js";
 
 export default async function handler(req, res) {

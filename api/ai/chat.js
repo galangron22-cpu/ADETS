@@ -1,3 +1,8 @@
+/**
+ * POST /api/ai/chat
+ * Handles Alamin AI Study Assistant tutoring queries via Google Gemini (`gemini-3.1-flash-lite`)
+ * with DepEd ALS curriculum scope enforcement and prompt-injection guardrails.
+ */
 import { GoogleGenAI } from "@google/genai";
 import { getUserFromRequest, json } from "../_lib/supabase.js";
 import fs from "fs";

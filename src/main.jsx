@@ -1,3 +1,7 @@
+/**
+ * Application bootstrap entry point.
+ * Registers the PWA service worker and lazy-loads either the Student or Teacher/Admin portal based on URL path.
+ */
 // Entry: "/" = student portal, "/teacher" = teacher portal, "/admin" = admin portal
 import { registerSW } from "virtual:pwa-register";
 import { lazy, Suspense } from "react";

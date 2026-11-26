@@ -1,3 +1,7 @@
+/**
+ * GET /api/admin/accounts
+ * Lists user profile accounts for Administrators with optional role and display-name search filtering.
+ */
 import { getUserFromRequest, json } from "../../_lib/supabase.js";
 
 export default async function handler(req, res) {

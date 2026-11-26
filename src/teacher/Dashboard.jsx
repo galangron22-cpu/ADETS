@@ -1,3 +1,8 @@
+/**
+ * Teacher & Administrator overview dashboard (`Dash`).
+ * Displays learner/question/set summary metrics, priority pending review items,
+ * ALS strand mastery chart, and quick actions for AI generation or creating question sets.
+ */
 import { useState, useEffect } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";

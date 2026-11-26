@@ -1,3 +1,8 @@
+/**
+ * Timed interactive ALS practice quiz runner.
+ * Loads downloaded IndexedDB question bundles or fallback items, tracks countdown timer with auto-submit,
+ * prompts on incomplete submission, and records attempts locally.
+ */
 import { useState, useEffect } from "react";
 import { h } from "../shared/html.js";
 import { fmt } from "../shared/data.js";

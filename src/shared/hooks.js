@@ -1,3 +1,6 @@
+/**
+ * Custom React hooks and shared theme synchronization helpers (light/dark mode persistence via localStorage & transient toasts).
+ */
 import { useState, useEffect } from "react";
 
 const THEME_KEY = "alamin_theme";

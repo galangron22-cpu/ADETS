@@ -1,3 +1,7 @@
+/**
+ * Root controller for Teacher (`/teacher`) and Administrator (`/admin`) portals.
+ * Enforces educator role authorization via Supabase Auth and loads questions, sets, and accounts into `TeacherLayout`.
+ */
 // TEACHER / ADMIN PORTAL (route: /teacher & /admin) – desktop web
 import { useState, useEffect } from "react";
 import { h } from "../shared/html.js";
@@ -84,20 +88,16 @@ export default function TeacherApp() {
   return h`<div>
     ${profile ? h`
       <header class="top">
-        <div class="row" style=${{ gap: 8 }}>
-          <div style=${{ 
-            width: 28, 
-            height: 28, 
-            borderRadius: 8, 
-            background: "var(--sf)", 
-            color: "var(--pr)", 
-            display: "flex", 
-            alignItems: "center", 
-            justifyContent: "center" 
-          }}>
-            <${isAdminPath ? ShieldCheck : GraduationCap} size=${17} />
+        <div class="row" style=${{ gap: 10 }}>
+          <div class="brand-logo-wrap sm">
+            <img
+              src="/alamin_logo_cutout.png"
+              alt="ALAMIN"
+              class="brand-logo-img"
+              style=${{ height: 32 }}
+            />
           </div>
-          <b>${isAdminPath ? "ALAMIN · Admin Portal" : "ALAMIN · Teacher Portal"}</b>
+          <b>${isAdminPath ? "Admin Portal" : "Teacher Portal"}</b>
         </div>
 
         <span class="pill" style=${{ background: "var(--sf)", color: "var(--pr)", fontWeight: 700 }}>

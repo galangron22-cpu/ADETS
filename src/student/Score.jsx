@@ -1,3 +1,8 @@
+/**
+ * Post-quiz results & answer review view.
+ * Triggers celebratory canvas confetti on passing/perfect scores, displays item explanations,
+ * and links directly into the AI Study Assistant for question clarification.
+ */
 import { useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { 

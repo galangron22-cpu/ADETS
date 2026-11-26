@@ -1,3 +1,7 @@
+/**
+ * GET /api/strands/:id/topics
+ * Lists active ALS curriculum topics belonging to the specified learning strand ID.
+ */
 import { getSupabase, json } from "../../_lib/supabase.js";
 
 export default async function handler(req, res) {

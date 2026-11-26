@@ -1,3 +1,7 @@
+/**
+ * POST /api/admin/question-sets
+ * Allows Teachers and Administrators to create a new Draft question set and link ordered question items.
+ */
 import { getUserFromRequest, json } from "../../_lib/supabase.js";
 
 async function parseBody(req) {

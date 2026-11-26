@@ -1,3 +1,8 @@
+/**
+ * GET /api/admin/questions | POST /api/admin/questions
+ * Lists question bank items for Teachers/Admins with status, strand, and text filters,
+ * and allows creating new 4-choice questions (Manual source).
+ */
 import { getUserFromRequest, json } from "../../_lib/supabase.js";
 
 async function parseBody(req) {

@@ -1,3 +1,8 @@
+/**
+ * Root controller for the Student Portal PWA (`/`).
+ * Manages Supabase learner session, online/offline connectivity, IndexedDB offline bundle caching,
+ * bilingual translations (`T`), theme state, and shared navigation state.
+ */
 // STUDENT PORTAL (route: /) – React PWA for ALS learners
 import { useState, useEffect } from "react";
 import { h } from "../shared/html.js";

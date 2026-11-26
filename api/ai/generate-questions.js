@@ -1,8 +1,14 @@
+/**
+ * POST /api/ai/generate-questions
+ * Generates DepEd ALS multiple-choice draft questions for Teachers/Admins via Google Gemini
+ * and saves them in 'Pending' status for Admin review before publishing.
+ */
 import { GoogleGenAI } from "@google/genai";
 import { getUserFromRequest, json } from "../_lib/supabase.js";
 import fs from "fs";
 import path from "path";
 
+/** Loads the Gemini API key from process environment or local `.env` fallback. */
 function getGeminiApiKey() {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "your_gemini_api_key_here") {
     return process.env.GEMINI_API_KEY;

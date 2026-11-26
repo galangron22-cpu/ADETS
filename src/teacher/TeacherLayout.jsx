@@ -1,3 +1,8 @@
+/**
+ * Main workspace layout and tab router for authenticated Teachers and Administrators (`TeacherLayout`).
+ * Coordinates sidebar navigation, AI question generation, question authoring/approval submissions,
+ * question set publishing, account governance (Admin only), and analytics reports.
+ */
 import { useState } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";

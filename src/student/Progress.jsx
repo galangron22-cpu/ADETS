@@ -1,3 +1,7 @@
+/**
+ * Learner mastery & assessment history dashboard.
+ * Computes per-strand averages against the 75% ALS passing benchmark and manually syncs queued offline attempts.
+ */
 import { useState, useEffect } from "react";
 import { h } from "../shared/html.js";
 import { S, sets_of } from "../shared/data.js";

@@ -1,3 +1,8 @@
+/**
+ * Alamin AI Study Assistant chat interface.
+ * Lets authenticated learners ask ALS questions online via `/api/ai/chat`, renders Markdown replies,
+ * validates input limits, and provides quick topic suggestions.
+ */
 import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";

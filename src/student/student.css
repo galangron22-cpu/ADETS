@@ -1,6 +1,6 @@
 /* ALAMIN - Student Portal Stylesheet
-   Responsive Full-Screen Desktop & Native iOS Mobile Layout
-   Optimized font rendering, clean letter-spacing, and micro-interactions
+   Styles for responsive Desktop Top Bar, Mobile Brand Row, iOS-inspired Floating Bottom Dock,
+   Glassmorphic Hero/AI/Strand Cards, Search & Pill Filters, Chat Bubbles, and Profile Modal.
 */
 
 /* -------------------------------------------------------------
@@ -103,21 +103,40 @@
 .desktop-brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   cursor: pointer;
   text-decoration: none;
   color: var(--tx);
 }
 
-.desktop-brand-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--sf);
-  color: var(--pr);
+.desktop-brand-meta {
   display: flex;
   align-items: center;
-  justify-content: center;
+  padding-left: 12px;
+  border-left: 1px solid var(--bd);
+  height: 26px;
+}
+
+.desktop-brand-portal {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--mu);
+  white-space: nowrap;
+}
+
+/* Mobile top brand row (hidden on desktop >= 768px) */
+.mobile-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 2px 2px 0 2px;
+}
+
+@media (min-width: 768px) {
+  .mobile-brand-row {
+    display: none;
+  }
 }
 
 /* -------------------------------------------------------------
@@ -179,6 +198,16 @@
 
 .ios-avatar-btn:active {
   transform: scale(0.95);
+}
+
+.ios-avatar-btn.desktop-greeting-avatar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .ios-avatar-btn.desktop-greeting-avatar {
+    display: flex;
+  }
 }
 
 /* -------------------------------------------------------------
@@ -351,6 +380,7 @@
 .ios-hero-title {
   font-size: 22px;
   font-weight: 700;
+  color: #ffffff;
   margin: 6px 0 0 0;
   letter-spacing: normal;
   line-height: 1.25;
@@ -535,7 +565,7 @@
   align-items: center;
   gap: 6px;
   width: max-content;
-  max-width: calc(100vw - 32px);
+  max-width: 100%;
   box-sizing: border-box;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -573,6 +603,58 @@
 
 .ios-dock-btn.on svg {
   stroke-width: 2.4px;
+}
+
+.ios-dock-btn svg {
+  flex-shrink: 0;
+}
+
+/* Responsive compact sizing for small phones (320px - 420px) */
+@media (max-width: 420px) {
+  .ios-dock-wrapper {
+    padding: 0 12px;
+  }
+  .ios-dock {
+    padding: 5px 6px;
+    gap: 4px;
+  }
+  .ios-dock-btn {
+    padding: 7px 12px;
+    gap: 6px;
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  .ios-dock-wrapper {
+    bottom: 14px;
+    padding: 0 10px;
+  }
+  .ios-dock {
+    padding: 4px 5px;
+    gap: 3px;
+  }
+  .ios-dock-btn {
+    padding: 7px 10px;
+    gap: 5px;
+    font-size: 11.5px;
+  }
+  .ios-dock-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+@media (max-width: 300px) {
+  .ios-dock-btn {
+    padding: 6px 8px;
+    gap: 4px;
+    font-size: 10.5px;
+  }
+  .ios-dock-btn svg {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 /* Dark Mode Navigation Dock */
@@ -664,6 +746,13 @@
   background: var(--card);
   color: var(--pr);
   box-shadow: var(--shadow-xs);
+}
+
+@media (max-width: 360px) {
+  .ios-segmented-btn {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
 }
 
 /* -------------------------------------------------------------
