@@ -12,42 +12,95 @@ import { TeacherLogin } from "./TeacherLogin.jsx";
 import { 
   ShieldCheck, 
   GraduationCap, 
-  Sparkles, 
   LogOut, 
-  ArrowLeft, 
-  ArrowRight 
+  Sun, 
+  Moon 
 } from "../shared/icons.js";
-import "./teacher.css";
 
 export default function TeacherApp() {
   const isAdminPath = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
   const [profile, setProfile] = useState(null);
-  const [, toggleTheme] = useTheme();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [theme, toggleTheme] = useTheme();
+  const isDark = theme === "dark";
   const [toast, say] = useToast();
   const [qs, setQs] = useState([]);
   const [sets, setSets] = useState([]);
   const [acc, setAcc] = useState([]);
 
-  // Check auth session on mount
+  // Check auth session on mount, auth changes, and browser bfcache pageshow
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
+    let active = true;
+
+    const verifyStaffSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
+
+        if (!session?.user) {
+          setProfile(null);
+          setAuthChecked(true);
+          return;
+        }
+
         const { data: prof } = await supabase
           .from("profiles")
           .select("profile_id, display_name, role, account_status")
           .eq("profile_id", session.user.id)
           .single();
 
-        if (prof) {
-          if (isAdminPath && prof.role !== "Admin") {
+        if (!active) return;
+
+        if (!prof || prof.account_status === "Suspended") {
+          await supabase.auth.signOut();
+          if (active) {
             setProfile(null);
-          } else if (prof.role === "Teacher" || prof.role === "Admin") {
-            setProfile(prof);
+            setAuthChecked(true);
           }
+          return;
         }
+
+        if (prof.role === "Learner") {
+          window.location.replace("/");
+          return;
+        }
+
+        if (isAdminPath && prof.role !== "Admin") {
+          window.location.replace("/teacher");
+          return;
+        }
+
+        if (prof.role === "Teacher" || prof.role === "Admin") {
+          setProfile(prof);
+        } else {
+          setProfile(null);
+        }
+        setAuthChecked(true);
+      } catch (e) {
+        if (active) setAuthChecked(true);
+      }
+    };
+
+    verifyStaffSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
+        setProfile(null);
+        setAuthChecked(true);
+      } else {
+        verifyStaffSession();
       }
     });
-  }, []);
+
+    const onPageShow = () => verifyStaffSession();
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [isAdminPath]);
 
   // Fetch admin data once authenticated
   useEffect(() => {
@@ -85,50 +138,74 @@ export default function TeacherApp() {
     setProfile(null);
   };
 
-  return h`<div>
+  if (!authChecked) {
+    return h`<div class="teacher-root" style=${{ alignItems: "center", justifyContent: "center" }}>
+      <p class="mu" style=${{ fontSize: 14 }}>Loading…</p>
+    </div>`;
+  }
+
+  return h`<div class="teacher-root">
     ${profile ? h`
-      <header class="top">
-        <div class="row" style=${{ gap: 10 }}>
-          <div class="brand-logo-wrap sm">
-            <img
-              src="/alamin_logo_cutout.png"
-              alt="ALAMIN"
-              class="brand-logo-img"
-              style=${{ height: 32 }}
-            />
+      <header class="teacher-top-bar">
+        <div class="teacher-top-inner">
+          <div class="teacher-brand">
+            <div class="brand-logo-wrap sm">
+              <img
+                src="/alamin_logo_cutout.png"
+                alt="ALAMIN"
+                class="brand-logo-img"
+                style=${{ height: 34 }}
+              />
+            </div>
+            <div class="teacher-brand-meta">
+              <b>${isAdminPath ? "Admin Portal" : "Teacher Portal"}</b>
+            </div>
           </div>
-          <b>${isAdminPath ? "Admin Portal" : "Teacher Portal"}</b>
+
+          <div class="teacher-top-actions">
+            <span class="pill teacher-role-pill" style=${{ background: "var(--sf)", color: "var(--pr)", fontWeight: 700 }}>
+              <${profile.role === "Admin" ? ShieldCheck : GraduationCap} size=${13} />
+              <span>${profile.role}: ${profile.display_name}</span>
+            </span>
+
+            <button
+              type="button"
+              class="teacher-theme-btn"
+              onClick=${toggleTheme}
+              title=${isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle theme"
+            >
+              <${isDark ? Sun : Moon} size=${15} />
+            </button>
+
+            <button 
+              type="button"
+              class="pill" 
+              onClick=${handleLogout}
+              style=${{ color: "var(--bad)", borderColor: "rgba(217, 45, 32, 0.25)" }}
+            >
+              <${LogOut} size=${13} />
+              <span>Log Out</span>
+            </button>
+          </div>
         </div>
-
-        <span class="pill" style=${{ background: "var(--sf)", color: "var(--pr)", fontWeight: 700 }}>
-          <${profile.role === "Admin" ? ShieldCheck : GraduationCap} size=${13} />
-          <span>${profile.role}: ${profile.display_name}</span>
-        </span>
-
-        <button 
-          type="button"
-          class="pill" 
-          onClick=${handleLogout}
-          style=${{ color: "var(--bad)" }}
-        >
-          <${LogOut} size=${13} />
-          <span>Log Out</span>
-        </button>
       </header>
     ` : null}
 
     ${profile ? h`
-      <${TeacherLayout} 
-        profile=${profile}
-        qs=${qs} 
-        setQs=${setQs} 
-        sets=${sets} 
-        setSets=${setSets} 
-        acc=${acc} 
-        setAcc=${setAcc} 
-        say=${say}
-        onLogout=${handleLogout}
-      />
+      <div class="teacher-shell">
+        <${TeacherLayout} 
+          profile=${profile}
+          qs=${qs} 
+          setQs=${setQs} 
+          sets=${sets} 
+          setSets=${setSets} 
+          acc=${acc} 
+          setAcc=${setAcc} 
+          say=${say}
+          onLogout=${handleLogout}
+        />
+      </div>
     ` : h`
       <${TeacherLogin} onLogin=${setProfile} />
     `}

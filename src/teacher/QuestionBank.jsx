@@ -3,7 +3,7 @@
  * Lets educators search and filter ALS questions by status/strand/difficulty,
  * inspect 4-choice answer keys inline, and launch the Question Editor or AI Generator.
  */
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";
 import { 
@@ -21,7 +21,7 @@ import {
   ChevronUp 
 } from "../shared/icons.js";
 
-export function QBank({ qs, f, setF, setEd, gen, nw, loading }) {
+export function QBank({ qs, f, setF, setEd, gen, nw, loading, isAdmin = false }) {
   const [expandedId, setExpandedId] = useState(null);
 
   const pendingCount = qs.filter(q => q.status === "Pending").length;
@@ -31,7 +31,7 @@ export function QBank({ qs, f, setF, setEd, gen, nw, loading }) {
 
   const list = qs.filter(q => 
     (q.text || "").toLowerCase().includes((f.q || "").toLowerCase()) &&
-    (!f.s || q.strand === f.s || q.strand_code === f.s) &&
+    (!f.s || q.strand === f.s || q.strand_code === f.s || (q.strand !== undefined && S[q.strand]?.code === f.s)) &&
     (!f.st || q.status === f.st) &&
     (!f.diff || q.diff === f.diff)
   );
@@ -173,7 +173,7 @@ export function QBank({ qs, f, setF, setEd, gen, nw, loading }) {
             const isPending = q.status === "Pending";
             const isExpanded = expandedId === q.id;
 
-            return h`<>
+            return h`<${Fragment} key=${q.id}>
               <tr style=${{ cursor: "pointer" }} onClick=${() => toggleExpand(q.id)}>
                 <td style=${{ maxWidth: 380, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", fontWeight: 600 }}>
                   <div class="row" style=${{ gap: 8 }}>
@@ -213,7 +213,7 @@ export function QBank({ qs, f, setF, setEd, gen, nw, loading }) {
                     onClick=${() => setEd(q)}
                   >
                     <${Edit3} size=${13} />
-                    <span>${isPending ? "Review" : isApproved ? "Edit" : "Inspect"}</span>
+                    <span>${isPending ? (isAdmin ? "Review" : "Edit") : isApproved ? "Edit" : "Inspect"}</span>
                   </button>
                 </td>
               </tr>
@@ -259,7 +259,7 @@ export function QBank({ qs, f, setF, setEd, gen, nw, loading }) {
                   </td>
                 </tr>
               `}
-            </>`;
+            <//>`;
           })}
         </tbody>
       </table>

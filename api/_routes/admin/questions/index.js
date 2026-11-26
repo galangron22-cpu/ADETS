@@ -65,6 +65,8 @@ export default async function handler(req, res) {
 
       if (req.query.status) {
         query = query.eq("status", req.query.status);
+      } else {
+        query = query.neq("status", "Archived");
       }
 
       if (req.query.strand_id) {
@@ -123,6 +125,10 @@ export default async function handler(req, res) {
         return json(res, 400, { error: "Exactly 4 choices are required" });
       }
 
+      const targetStatus = profile.role === "Admin"
+        ? (["Approved", "Pending", "Draft"].includes(status) ? status : "Draft")
+        : (status === "Pending" ? "Pending" : "Draft");
+
       const { data: newQ, error: qErr } = await client
         .from("questions")
         .insert({
@@ -131,7 +137,7 @@ export default async function handler(req, res) {
           explanation: explanation || "",
           difficulty,
           source_type: "Manual",
-          status: profile.role === "Admin" && status === "Approved" ? "Approved" : "Draft",
+          status: targetStatus,
           created_by: user.id
         })
         .select("question_id")
@@ -154,7 +160,7 @@ export default async function handler(req, res) {
       return json(res, 201, {
         success: true,
         question_id: newQ.question_id,
-        status: status
+        status: targetStatus
       });
     } catch (err) {
       return json(res, 500, { error: err.message });

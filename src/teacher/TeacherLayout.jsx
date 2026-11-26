@@ -19,8 +19,7 @@ import {
   Users, 
   BarChart3, 
   ShieldCheck, 
-  GraduationCap, 
-  LogOut 
+  GraduationCap 
 } from "../shared/icons.js";
 
 export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, say, onLogout }) {
@@ -70,16 +69,15 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
     }
 
     try {
-      if (n.isNew) {
-        // Fetch a topic_id for the strand
-        const strandsRes = await fetchApi("/api/strands");
-        const strandObj = strandsRes.strands?.[n.strand || 0];
-        let topicId = null;
-        if (strandObj) {
-          const topicsRes = await fetchApi(`/api/strands/${strandObj.strand_id}/topics`);
-          topicId = topicsRes.topics?.[0]?.topic_id;
-        }
+      const strandsRes = await fetchApi("/api/strands");
+      const strandObj = strandsRes.strands?.[n.strand || 0];
+      let topicId = n.topic_id || null;
+      if (strandObj && (n.isNew || strandObj.strand_id !== n.strand_id || !topicId)) {
+        const topicsRes = await fetchApi(`/api/strands/${strandObj.strand_id}/topics`);
+        topicId = topicsRes.topics?.[0]?.topic_id || topicId;
+      }
 
+      if (n.isNew) {
         await fetchApi("/api/admin/questions", {
           method: "POST",
           body: JSON.stringify({
@@ -94,15 +92,21 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
         });
         say("Created question successfully: " + n.status);
       } else {
-        // Update question status (Approve / Reject / Draft)
+        // Update question content and status (Approve / Reject / Draft / Pending)
         await fetchApi(`/api/admin/questions/${n.id}`, {
           method: "PATCH",
           body: JSON.stringify({
+            topic_id: topicId || undefined,
+            question_text: n.text,
+            choices: n.choices,
+            correct_index: n.ans,
+            explanation: n.exp,
+            difficulty: n.diff,
             status: n.status,
             rejection_reason: n.rej || undefined
           })
         });
-        say(`Question status updated to ${n.status}`);
+        say(`Question saved (${n.status})`);
       }
       await reloadQuestions();
     } catch (e) {
@@ -189,20 +193,6 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
           </button>`;
         })}
       </nav>
-
-      ${onLogout && h`
-        <div style=${{ paddingTop: 14, borderTop: "1px solid var(--bd)" }}>
-          <button 
-            type="button" 
-            class="btn d"
-            style=${{ width: "100%", justifyContent: "center", fontSize: 13 }}
-            onClick=${onLogout}
-          >
-            <${LogOut} size=${15} />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      `}
     </aside>
 
     <!-- Main Content Area -->
@@ -220,6 +210,7 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
       ${pg === "Questions" && (ed ? h`
         <${Editor} 
           q=${ed} 
+          isAdmin=${profile?.role === "Admin"}
           done=${handleEditorDone}
         />
       ` : h`
@@ -228,6 +219,7 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
           f=${f} 
           setF=${setF} 
           setEd=${setEd} 
+          isAdmin=${profile?.role === "Admin"}
           loading=${loading}
           gen=${handleAiGenerate} 
           nw=${() => setEd({

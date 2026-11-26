@@ -3,7 +3,7 @@
  * Renders the top desktop/mobile brand bar, floating bottom navigation dock, Home strand explorer
  * (with mastery card, AI tutor launcher, search & filter pills), Topics/Sets picker, and active view screens.
  */
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { S, TOP, sets_of } from "../shared/data.js";
 import { supabase } from "../shared/supabase.js";
@@ -51,6 +51,43 @@ export function StudentLayout(p) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [topicTab, setTopicTab] = useState("sets");
   const [showProfile, setShowProfile] = useState(false);
+  const [dockHidden, setDockHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Reset dock visibility whenever navigating between screens
+  useEffect(() => {
+    setDockHidden(false);
+    lastScrollY.current = typeof window !== "undefined" ? Math.max(0, window.scrollY || 0) : 0;
+  }, [scr]);
+
+  // Sink bottom dock on scroll down, resurface on scroll up
+  useEffect(() => {
+    if (scr === "login" || !user) return;
+
+    const handleScroll = () => {
+      const currentY = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
+      const delta = currentY - lastScrollY.current;
+
+      if (currentY <= 24) {
+        setDockHidden(false);
+        lastScrollY.current = currentY;
+        return;
+      }
+
+      if (Math.abs(delta) < 6) return;
+
+      if (delta > 0 && currentY > 40) {
+        setDockHidden(true);
+      } else if (delta < 0) {
+        setDockHidden(false);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [scr, user]);
 
   if (scr === "login" || !user) {
     return h`<${Login} ...${p} />`;
@@ -71,10 +108,10 @@ export function StudentLayout(p) {
     { label: "AI Tutor", id: "chat", icon: MessageSquare }
   ];
 
-  // Floating iOS Bottom Navigation Dock (3 clean tabs, perfectly fitted)
+  // Floating iOS Bottom Navigation Dock (3 clean tabs, sinks on scroll down, rises on scroll up)
   const floatingDock = h`
-    <div class="ios-dock-wrapper">
-      <nav class="ios-dock">
+    <div class="ios-dock-wrapper ${dockHidden ? "dock-hidden" : ""}">
+      <nav class="ios-dock" aria-hidden=${dockHidden}>
         ${navItems.map(item => {
           const Icon = item.icon;
           const isActive = scr === item.id;

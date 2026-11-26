@@ -1,16 +1,109 @@
-/* Teacher & Admin Portal Layout, Sidebar Navigation, Metric Stat Cards, Question Bank Cards, and Responsive Breakpoints */
+/* Teacher & Admin Portal Layout, Top Bar, Sidebar Navigation, Metric Stat Cards, Question Bank Cards, and Responsive Breakpoints */
+
+.teacher-root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.teacher-top-bar {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--bd);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  box-shadow: 0 4px 20px -2px rgba(20, 33, 61, 0.04);
+}
+
+:root[data-theme="dark"] .teacher-top-bar {
+  background: rgba(14, 20, 36, 0.86);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+.teacher-top-inner {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.teacher-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.teacher-brand-meta {
+  display: flex;
+  align-items: center;
+  padding-left: 10px;
+  border-left: 1px solid var(--bd);
+  height: 24px;
+  font-size: 14px;
+  color: var(--tx);
+  white-space: nowrap;
+}
+
+.teacher-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.teacher-theme-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--sf);
+  border: 1.5px solid var(--bd);
+  color: var(--tx);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.teacher-theme-btn:hover {
+  background: var(--card);
+  border-color: var(--pr);
+  color: var(--pr);
+}
+
+.teacher-shell {
+  width: 100%;
+  padding: 0 20px 32px;
+  flex: 1;
+}
+
 /* Teacher & Admin Portal Layout */
 .adm {
   display: grid;
   grid-template-columns: 260px 1fr;
-  max-width: 1320px;
-  margin: 24px auto;
-  background: var(--card);
+  max-width: 1360px;
+  margin: 20px auto 0;
+  background: rgba(255, 255, 255, 0.56);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
   border: 1px solid var(--bd);
-  border-radius: var(--radius-lg);
-  min-height: 720px;
+  border-radius: 22px;
+  min-height: calc(100vh - 115px);
   overflow: hidden;
   box-shadow: var(--shadow-md);
+}
+
+:root[data-theme="dark"] .adm {
+  background: rgba(18, 25, 44, 0.65);
 }
 
 /* Sidebar */
@@ -20,14 +113,18 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: var(--card);
+  background: rgba(255, 255, 255, 0.78);
   position: relative;
+}
+
+:root[data-theme="dark"] .side {
+  background: rgba(23, 32, 54, 0.78);
 }
 
 .side-brand {
   padding: 6px 12px 18px;
   border-bottom: 1px solid var(--bd);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -36,16 +133,16 @@
 .side-nav {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   flex: 1;
 }
 
 .side-nav button {
   text-align: left;
-  border: 0;
+  border: 1px solid transparent;
   background: none;
   padding: 10px 14px;
-  border-radius: var(--radius);
+  border-radius: 12px;
   cursor: pointer;
   color: var(--mu);
   font-size: 13.5px;
@@ -54,6 +151,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+  white-space: nowrap;
   transition: var(--transition);
 }
 
@@ -64,8 +162,10 @@
 
 .side-nav button.on {
   background: var(--sf);
+  border-color: rgba(31, 111, 235, 0.22);
   color: var(--pr);
   font-weight: 700;
+  box-shadow: var(--shadow-xs);
 }
 
 .side-nav button.on svg {
@@ -88,19 +188,19 @@
 
 /* Main Content Area */
 .main {
-  padding: 30px 36px;
+  padding: 28px 32px;
   display: flex;
   flex-direction: column;
   gap: 22px;
   min-width: 0;
-  background: var(--card);
+  background: transparent;
   overflow-y: auto;
 }
 
 /* Dashboard Metric Cards */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -245,18 +345,35 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 1160px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 960px) {
+  .teacher-shell {
+    padding: 0 12px 24px;
+  }
+  .teacher-top-inner {
+    padding: 10px 14px;
+  }
   .adm {
     grid-template-columns: 1fr;
-    margin: 12px;
-    border-radius: var(--radius);
+    margin: 12px auto 0;
+    border-radius: 18px;
+    min-height: auto;
   }
   .side {
     flex-direction: row;
     overflow-x: auto;
     border-right: 0;
     border-bottom: 1px solid var(--bd);
-    padding: 12px;
+    padding: 10px 12px;
+    scrollbar-width: none;
+  }
+  .side::-webkit-scrollbar {
+    display: none;
   }
   .side-brand {
     display: none;
@@ -266,14 +383,14 @@
     flex-wrap: nowrap;
   }
   .main {
-    padding: 20px;
-  }
-  .stats {
-    grid-template-columns: 1fr 1fr;
+    padding: 20px 18px;
   }
 }
 
 @media (max-width: 580px) {
+  .teacher-role-pill {
+    display: none;
+  }
   .stats {
     grid-template-columns: 1fr;
   }

@@ -567,7 +567,30 @@
   width: max-content;
   max-width: 100%;
   box-sizing: border-box;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  will-change: transform, opacity;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.26s ease,
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.ios-dock-wrapper.dock-hidden .ios-dock {
+  transform: translateY(calc(100% + 28px)) scale(0.94);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ios-dock {
+    transition: opacity 0.15s ease;
+  }
+  .ios-dock-wrapper.dock-hidden .ios-dock {
+    transform: none;
+  }
 }
 
 .ios-dock-btn {
@@ -978,32 +1001,6 @@
 .msg ul, .msg ol {
   margin: 6px 0;
   padding-left: 20px;
-}
-
-.chips {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.chip {
-  font-size: 12.5px;
-  padding: 6px 12px;
-  border-radius: var(--radius-full);
-  background: var(--sf);
-  border: 1px solid var(--bd);
-  color: var(--tx);
-  cursor: pointer;
-  transition: var(--transition);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.chip:hover {
-  background: var(--card);
-  border-color: var(--pr);
-  color: var(--pr);
 }
 
 .prog-hero {

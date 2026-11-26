@@ -27,6 +27,7 @@ export default function StudentApp() {
   const [online, setOnline] = useState(navigator.onLine);
   const [, toggleTheme] = useTheme();
   const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
   const [scr, setScr] = useState("login");
   const [ctx, setCtx] = useState({});
   const [strands, setStrands] = useState(defaultStrands);
@@ -75,26 +76,87 @@ export default function StudentApp() {
     };
   }, []);
 
-  // Check active Supabase session
+  // Check active Supabase session & enforce role isolation (including browser back/bfcache pageshow)
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        const name = session.user.user_metadata?.display_name || session.user.email.split("@")[0];
-        setUser(name);
-        setScr("home");
-      }
-    });
+    let active = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        const name = session.user.user_metadata?.display_name || session.user.email.split("@")[0];
-        setUser(name);
-      } else {
+    const verifyLearnerSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!active) return;
+
+        if (!session?.user) {
+          setUser(null);
+          setScr("login");
+          setAuthChecked(true);
+          return;
+        }
+
+        let role = session.user.user_metadata?.role;
+        let displayName = session.user.user_metadata?.display_name || session.user.email.split("@")[0];
+
+        try {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name, role, account_status")
+            .eq("profile_id", session.user.id)
+            .single();
+
+          if (prof) {
+            role = prof.role || role;
+            displayName = prof.display_name || displayName;
+            if (prof.account_status === "Suspended") {
+              await supabase.auth.signOut();
+              if (active) {
+                setUser(null);
+                setScr("login");
+                setAuthChecked(true);
+              }
+              return;
+            }
+          }
+        } catch (e) {}
+
+        // Teachers & Admins can only view their dedicated portal dashboard
+        if (role === "Admin") {
+          window.location.replace("/admin");
+          return;
+        }
+        if (role === "Teacher") {
+          window.location.replace("/teacher");
+          return;
+        }
+
+        if (active) {
+          setUser(displayName);
+          setScr(prev => (prev === "login" ? "home" : prev));
+          setAuthChecked(true);
+        }
+      } catch (e) {
+        if (active) setAuthChecked(true);
+      }
+    };
+
+    verifyLearnerSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_OUT" || !session?.user) {
         setUser(null);
+        setScr("login");
+        setAuthChecked(true);
+      } else {
+        verifyLearnerSession();
       }
     });
 
-    return () => subscription.unsubscribe();
+    const onPageShow = () => verifyLearnerSession();
+    window.addEventListener("pageshow", onPageShow);
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+      window.removeEventListener("pageshow", onPageShow);
+    };
   }, []);
 
   // Fetch live strands and sets when online, load offline bundles from IndexedDB
@@ -198,6 +260,12 @@ export default function StudentApp() {
     lang,
     setLang
   };
+
+  if (!authChecked) {
+    return h`<div class="student-root" style=${{ alignItems: "center", justifyContent: "center" }}>
+      <p class="mu" style=${{ fontSize: 14 }}>Loading…</p>
+    </div>`;
+  }
 
   return h`<div class="student-root">
     <${StudentLayout} ...${P} scr=${scr}/>

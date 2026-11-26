@@ -98,7 +98,37 @@ export function Login(p) {
         }
 
         const user = data.user;
-        const displayName = user.user_metadata?.display_name || user.email.split("@")[0];
+        let role = user.user_metadata?.role;
+        let displayName = user.user_metadata?.display_name || user.email.split("@")[0];
+
+        try {
+          const { data: prof } = await supabase
+            .from("profiles")
+            .select("display_name, role, account_status")
+            .eq("profile_id", user.id)
+            .single();
+
+          if (prof) {
+            role = prof.role || role;
+            displayName = prof.display_name || displayName;
+            if (prof.account_status === "Suspended") {
+              setErr("Your account has been suspended. Please contact the administrator.");
+              await supabase.auth.signOut();
+              return;
+            }
+          }
+        } catch (errProf) {}
+
+        // Teachers & Admins belong strictly in their educator/admin dashboard
+        if (role === "Admin") {
+          window.location.replace("/admin");
+          return;
+        }
+        if (role === "Teacher") {
+          window.location.replace("/teacher");
+          return;
+        }
+
         p.setUser(displayName);
         p.say("Welcome back, " + displayName);
         p.go("home", {});

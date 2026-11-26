@@ -14,8 +14,11 @@ import {
   AlertCircle 
 } from "../shared/icons.js";
 
-export function Editor({ q, done }) {
-  const [d, setD] = useState(q);
+export function Editor({ q, done, isAdmin = false }) {
+  const resolvedStrand = typeof q.strand === "number"
+    ? q.strand
+    : Math.max(0, S.findIndex(s => s.code === q.strand_code || s.strand_id === q.strand_id));
+  const [d, setD] = useState({ ...q, strand: resolvedStrand });
   const [rr, setRr] = useState(q.rejection_reason || q.rej || "");
   const [err, setErr] = useState("");
 
@@ -31,15 +34,23 @@ export function Editor({ q, done }) {
   };
 
   const handleApprove = () => {
-    if (!d.text || d.choices.some(c => !c.trim())) {
+    if (!d.text.trim() || d.choices.some(c => !c.trim())) {
       setErr("Question text and all 4 choices are required.");
       return;
     }
     done({ ...d, status: "Approved" });
   };
 
+  const handleSubmitPending = () => {
+    if (!d.text.trim() || d.choices.some(c => !c.trim())) {
+      setErr("Question text and all 4 choices are required.");
+      return;
+    }
+    done({ ...d, status: "Pending" });
+  };
+
   const handleSaveDraft = () => {
-    if (!d.text) {
+    if (!d.text.trim()) {
       setErr("Question text is required.");
       return;
     }
@@ -145,31 +156,49 @@ export function Editor({ q, done }) {
         </select>
       </div>
 
-      <div style=${{ flex: 2, minWidth: 240 }}>
-        <label class="mu" style=${{ fontWeight: 600, display: "block", marginBottom: 6 }}>Rejection Reason (required only if rejecting)</label>
-        <input 
-          class="in" 
-          placeholder="E.g., Ambiguous choices, outside ALS scope..." 
-          value=${rr} 
-          onInput=${e => { setRr(e.target.value); setErr(""); }}
-        />
-      </div>
+      ${isAdmin ? h`
+        <div style=${{ flex: 2, minWidth: 240 }}>
+          <label class="mu" style=${{ fontWeight: 600, display: "block", marginBottom: 6 }}>Rejection Reason (required only if rejecting)</label>
+          <input 
+            class="in" 
+            placeholder="E.g., Ambiguous choices, outside ALS scope..." 
+            value=${rr} 
+            onInput=${e => { setRr(e.target.value); setErr(""); }}
+          />
+        </div>
+      ` : (rr && h`
+        <div style=${{ flex: 2, minWidth: 240 }}>
+          <label class="mu" style=${{ fontWeight: 600, display: "block", marginBottom: 6, color: "var(--bad)" }}>Admin Rejection Note</label>
+          <div class="badge off" style=${{ padding: "9px 12px", borderRadius: "var(--radius)", width: "100%", whiteSpace: "normal" }}>
+            ${rr}
+          </div>
+        </div>
+      `)}
     </div>
 
     <!-- Action Buttons -->
-    <div class="row" style=${{ gap: 10, marginTop: 8 }}>
-      <button type="button" class="btn d" style=${{ flex: 1 }} onClick=${handleReject}>
-        <${XCircle} size=${15} />
-        <span>Reject Question</span>
-      </button>
+    <div class="row" style=${{ gap: 10, marginTop: 8, flexWrap: "wrap" }}>
+      ${isAdmin && h`
+        <button type="button" class="btn d" style=${{ flex: 1 }} onClick=${handleReject}>
+          <${XCircle} size=${15} />
+          <span>Reject Question</span>
+        </button>
+      `}
       <button type="button" class="btn" style=${{ flex: 1 }} onClick=${handleSaveDraft}>
         <${FileText} size=${15} />
         <span>Save as Draft</span>
       </button>
-      <button type="button" class="btn p" style=${{ flex: 1 }} onClick=${handleApprove}>
-        <${CheckCircle2} size=${15} />
-        <span>Approve Question</span>
-      </button>
+      ${isAdmin ? h`
+        <button type="button" class="btn p" style=${{ flex: 1 }} onClick=${handleApprove}>
+          <${CheckCircle2} size=${15} />
+          <span>Approve Question</span>
+        </button>
+      ` : h`
+        <button type="button" class="btn p" style=${{ flex: 1 }} onClick=${handleSubmitPending}>
+          <${CheckCircle2} size=${15} />
+          <span>Submit for Review</span>
+        </button>
+      `}
     </div>
 
   </div>`;

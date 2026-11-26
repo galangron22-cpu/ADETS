@@ -186,6 +186,33 @@ a {
   border-color: var(--pr);
 }
 
+/* Shared Filter Chips */
+.chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-size: 12.5px;
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  background: var(--sf);
+  border: 1px solid var(--bd);
+  color: var(--tx);
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip:hover {
+  background: var(--card);
+  border-color: var(--pr);
+  color: var(--pr);
+}
+
 /* Typography */
 h1, h2, h3, h4 {
   margin: 0;
