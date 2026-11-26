@@ -3,7 +3,7 @@
  * Lists question bank items for Teachers/Admins with status, strand, and text filters,
  * and allows creating new 4-choice questions (Manual source).
  */
-import { getUserFromRequest, json } from "../../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../../_lib/supabase.js";
 
 async function parseBody(req) {
   if (req.body && typeof req.body === "object") return req.body;

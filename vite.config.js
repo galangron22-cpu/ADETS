@@ -7,7 +7,7 @@ import { VitePWA } from "vite-plugin-pwa";
 import fs from "fs";
 import path from "path";
 
-/** Vite middleware plugin that routes `/api/*` requests to serverless handler files during local development. */
+/** Vite middleware plugin that routes `/api/*` requests through `api/index.js` during local development. */
 function apiDevServerPlugin() {
   return {
     name: "api-dev-server",
@@ -18,58 +18,14 @@ function apiDevServerPlugin() {
         }
 
         try {
-          const urlObj = new URL(req.url, `http://${req.headers.host || "localhost"}`);
-          let p = urlObj.pathname.replace(/^\/api\/?/, "").split("?")[0];
-
-          let resolvedFile = null;
-          let queryParams = Object.fromEntries(urlObj.searchParams);
-
-          // Direct files or index.js
-          const directFile = path.resolve(process.cwd(), `api/${p}.js`);
-          const indexFile = path.resolve(process.cwd(), `api/${p}/index.js`);
-
-          if (fs.existsSync(directFile)) {
-            resolvedFile = directFile;
-          } else if (fs.existsSync(indexFile)) {
-            resolvedFile = indexFile;
-          } else {
-            // Pattern matches for dynamic [id] routes
-            const parts = p.split("/");
-            if (parts.length === 3 && parts[0] === "strands" && parts[2] === "topics") {
-              resolvedFile = path.resolve(process.cwd(), "api/strands/[id]/topics.js");
-              queryParams.id = parts[1];
-            } else if (parts.length === 3 && parts[0] === "question-sets" && parts[2] === "download") {
-              resolvedFile = path.resolve(process.cwd(), "api/question-sets/[id]/download.js");
-              queryParams.id = parts[1];
-            } else if (parts.length === 3 && parts[0] === "admin" && parts[1] === "questions") {
-              resolvedFile = path.resolve(process.cwd(), "api/admin/questions/[id].js");
-              queryParams.id = parts[2];
-            } else if (parts.length === 4 && parts[0] === "admin" && parts[1] === "question-sets" && parts[3] === "publish") {
-              resolvedFile = path.resolve(process.cwd(), "api/admin/question-sets/[id]/publish.js");
-              queryParams.id = parts[2];
-            } else if (parts.length === 4 && parts[0] === "admin" && parts[1] === "accounts" && parts[3] === "status") {
-              resolvedFile = path.resolve(process.cwd(), "api/admin/accounts/[id]/status.js");
-              queryParams.id = parts[2];
-            }
-          }
-
-          if (!resolvedFile || !fs.existsSync(resolvedFile)) {
-            res.statusCode = 404;
-            res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: `API route not found: /api/${p}` }));
-            return;
-          }
-
-          req.query = queryParams;
-
-          // Load serverless function using Vite SSR loader
-          const mod = await server.ssrLoadModule(resolvedFile);
+          const entryFile = path.resolve(process.cwd(), "api/index.js");
+          const mod = await server.ssrLoadModule(entryFile);
           if (typeof mod.default === "function") {
             await mod.default(req, res);
           } else {
             res.statusCode = 500;
             res.setHeader("Content-Type", "application/json");
-            res.end(JSON.stringify({ error: "No default export function in " + resolvedFile }));
+            res.end(JSON.stringify({ error: "No default export function in " + entryFile }));
           }
         } catch (err) {
           console.error("API Dev Server Error:", err);

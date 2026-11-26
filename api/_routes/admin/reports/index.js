@@ -3,7 +3,7 @@
  * Aggregates learner quiz statistics, pending question counts, and per-learner summaries
  * with strand/date filtering and optional CSV download export.
  */
-import { getUserFromRequest, json } from "../../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../../_lib/supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {

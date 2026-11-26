@@ -4,7 +4,7 @@
  * and saves them in 'Pending' status for Admin review before publishing.
  */
 import { GoogleGenAI } from "@google/genai";
-import { getUserFromRequest, json } from "../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../_lib/supabase.js";
 import fs from "fs";
 import path from "path";
 

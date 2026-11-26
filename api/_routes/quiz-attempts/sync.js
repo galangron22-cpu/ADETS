@@ -2,7 +2,7 @@
  * POST /api/quiz-attempts/sync
  * Idempotently syncs offline or online learner quiz attempts and re-calculates scores server-side against stored answer keys.
  */
-import { getUserFromRequest, json } from "../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../_lib/supabase.js";
 
 /** Reads and parses the incoming JSON request body when not pre-parsed by the runtime. */
 async function parseBody(req) {

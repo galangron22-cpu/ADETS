@@ -4,7 +4,7 @@
  * with DepEd ALS curriculum scope enforcement and prompt-injection guardrails.
  */
 import { GoogleGenAI } from "@google/genai";
-import { getUserFromRequest, json } from "../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../_lib/supabase.js";
 import fs from "fs";
 import path from "path";
 

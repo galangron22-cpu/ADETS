@@ -2,7 +2,7 @@
  * GET /api/strands
  * Returns all active DepEd ALS learning strands ordered by display_order.
  */
-import { getSupabase, json } from "../_lib/supabase.js";
+import { getSupabase, json } from "../../_lib/supabase.js";
 
 export default async function handler(req, res) {
   if (req.method !== "GET") {

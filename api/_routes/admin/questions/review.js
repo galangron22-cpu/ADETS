@@ -2,7 +2,7 @@
  * PATCH /api/admin/questions/:id
  * Allows Administrators to review, approve, reject (with required rejection_reason), draft, or archive questions.
  */
-import { getUserFromRequest, json } from "../../_lib/supabase.js";
+import { getUserFromRequest, json } from "../../../_lib/supabase.js";
 
 async function parseBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
