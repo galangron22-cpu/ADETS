@@ -2,7 +2,7 @@
  * Administrator user account governance panel (`Acc`).
  * Allows Admins to filter profiles by role/search query and suspend or reactivate accounts via `/api/admin/accounts/:id/status`.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";
 import { 
@@ -39,16 +39,31 @@ export function Acc({ acc, setAcc, say }) {
     }
   };
 
-  const learnersCount = acc.filter(a => a.r === "Learner").length;
-  const teachersCount = acc.filter(a => a.r === "Teacher").length;
-  const adminsCount = acc.filter(a => a.r === "Admin").length;
-  const activeCount = acc.filter(a => a.s === "Active").length;
-  const suspendedCount = acc.filter(a => a.s === "Suspended").length;
+  const { learnersCount, teachersCount, adminsCount, activeCount, suspendedCount } = useMemo(() => {
+    let learners = 0, teachers = 0, admins = 0, active = 0, suspended = 0;
+    for (const a of acc) {
+      if (a.r === "Learner") learners++;
+      else if (a.r === "Teacher") teachers++;
+      else if (a.r === "Admin") admins++;
+      if (a.s === "Active") active++;
+      else suspended++;
+    }
+    return {
+      learnersCount: learners,
+      teachersCount: teachers,
+      adminsCount: admins,
+      activeCount: active,
+      suspendedCount: suspended
+    };
+  }, [acc]);
 
-  const filtered = acc.filter(a => 
-    (a.n || "").toLowerCase().includes(q.toLowerCase()) && 
-    (!r || a.r === r)
-  );
+  const filtered = useMemo(() => {
+    const needle = q.toLowerCase();
+    return acc.filter(a =>
+      (!needle || (a.n || "").toLowerCase().includes(needle)) &&
+      (!r || a.r === r)
+    );
+  }, [acc, q, r]);
 
   return h`<div style=${{ display: "flex", flexDirection: "column", gap: 18 }}>
     

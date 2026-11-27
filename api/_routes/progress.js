@@ -15,25 +15,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch strands
-    const { data: strands, error: sErr } = await client
-      .from("learning_strands")
-      .select("strand_id, code, name, display_order")
-      .eq("is_active", true)
-      .order("display_order", { ascending: true });
+    // 1 & 2. Fetch strands and user attempts in parallel
+    const [{ data: strands, error: sErr }, { data: attempts, error: aErr }] = await Promise.all([
+      client
+        .from("learning_strands")
+        .select("strand_id, code, name, display_order")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true }),
+      client
+        .from("quiz_attempts")
+        .select(`
+          score,
+          total_questions,
+          question_sets (strand_id)
+        `)
+        .eq("learner_id", user.id)
+    ]);
 
     if (sErr) return json(res, 500, { error: sErr.message });
-
-    // 2. Fetch attempts for current user
-    const { data: attempts, error: aErr } = await client
-      .from("quiz_attempts")
-      .select(`
-        score,
-        total_questions,
-        question_sets (strand_id)
-      `)
-      .eq("learner_id", user.id);
-
     if (aErr) return json(res, 500, { error: aErr.message });
 
     // 3. Compute score per strand

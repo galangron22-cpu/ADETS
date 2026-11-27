@@ -1,7 +1,7 @@
 /**
  * Custom React hooks and shared theme synchronization helpers (light/dark mode persistence via localStorage & transient toasts).
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const THEME_KEY = "alamin_theme";
 
@@ -61,5 +61,20 @@ export function useTheme() {
 
 export function useToast() {
   const [m, setM] = useState("");
-  return [m, (x) => { setM(x); setTimeout(() => setM(""), 2200); }];
+  const timerRef = useRef(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+
+  const say = useCallback((x) => {
+    setM(x);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setM("");
+      timerRef.current = null;
+    }, 2200);
+  }, []);
+
+  return [m, say];
 }

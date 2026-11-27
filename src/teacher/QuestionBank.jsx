@@ -3,7 +3,7 @@
  * Lets educators search and filter ALS questions by status/strand/difficulty,
  * inspect 4-choice answer keys inline, and launch the Question Editor or AI Generator.
  */
-import { useState, Fragment } from "react";
+import { useState, useMemo, Fragment } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";
 import { 
@@ -24,17 +24,26 @@ import {
 export function QBank({ qs, f, setF, setEd, gen, nw, loading, isAdmin = false }) {
   const [expandedId, setExpandedId] = useState(null);
 
-  const pendingCount = qs.filter(q => q.status === "Pending").length;
-  const approvedCount = qs.filter(q => q.status === "Approved").length;
-  const draftCount = qs.filter(q => q.status === "Draft").length;
-  const rejectedCount = qs.filter(q => q.status === "Rejected").length;
+  const { pendingCount, approvedCount, draftCount, rejectedCount } = useMemo(() => {
+    let pending = 0, approved = 0, draft = 0, rejected = 0;
+    for (const q of qs) {
+      if (q.status === "Pending") pending++;
+      else if (q.status === "Approved") approved++;
+      else if (q.status === "Draft") draft++;
+      else if (q.status === "Rejected") rejected++;
+    }
+    return { pendingCount: pending, approvedCount: approved, draftCount: draft, rejectedCount: rejected };
+  }, [qs]);
 
-  const list = qs.filter(q => 
-    (q.text || "").toLowerCase().includes((f.q || "").toLowerCase()) &&
-    (!f.s || q.strand === f.s || q.strand_code === f.s || (q.strand !== undefined && S[q.strand]?.code === f.s)) &&
-    (!f.st || q.status === f.st) &&
-    (!f.diff || q.diff === f.diff)
-  );
+  const list = useMemo(() => {
+    const needle = (f.q || "").toLowerCase();
+    return qs.filter(q =>
+      (!needle || (q.text || "").toLowerCase().includes(needle)) &&
+      (!f.s || q.strand === f.s || q.strand_code === f.s || (q.strand !== undefined && S[q.strand]?.code === f.s)) &&
+      (!f.st || q.status === f.st) &&
+      (!f.diff || q.diff === f.diff)
+    );
+  }, [qs, f.q, f.s, f.st, f.diff]);
 
   const toggleExpand = (id) => {
     setExpandedId(expandedId === id ? null : id);

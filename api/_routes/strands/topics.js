@@ -27,6 +27,7 @@ export default async function handler(req, res) {
       return json(res, 500, { error: error.message });
     }
 
+    res.setHeader("Cache-Control", "public, max-age=300, stale-while-revalidate=3600");
     return json(res, 200, { topics: data });
   } catch (err) {
     return json(res, 500, { error: err.message });

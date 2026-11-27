@@ -8,7 +8,6 @@ import { lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { h } from "./shared/html.js";
 import "./shared/base.css";
-import "./teacher/teacher.css";
 
 // Automatically register Workbox service worker for full offline capability
 registerSW({ immediate: true });

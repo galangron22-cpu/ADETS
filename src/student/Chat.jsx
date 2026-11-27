@@ -3,7 +3,7 @@
  * Lets authenticated learners ask ALS questions online via `/api/ai/chat`, renders Markdown replies,
  * validates input limits, and provides quick topic suggestions.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";
 import { formatMarkdown } from "../shared/format.js";
@@ -23,6 +23,24 @@ const SUGGESTIONS = [
   "Subject-verb agreement rules (LS1)",
   "Employee rights in the Philippines (LS4)"
 ];
+
+/** Memoized chat message bubble so typing in the composer does not re-parse Markdown across chat history. */
+const ChatMessage = memo(function ChatMessage({ item }) {
+  const renderedHtml = useMemo(() => formatMarkdown(item.t), [item.t]);
+  return h`
+    <div class="msg-row ${item.b ? "bot" : "user"}">
+      <div class="avatar ${item.b ? "bot" : "user"}">
+        ${item.b
+          ? h`<img src="/chatbot-profile-image.png" alt="Bot" decoding="async" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />`
+          : h`<${User} size=${16} />`}
+      </div>
+      <div
+        class="msg ${item.b ? "b" : "u"}"
+        dangerouslySetInnerHTML=${{ __html: renderedHtml }}
+      />
+    </div>
+  `;
+});
 
 export function Chat(p) {
   const [m, setM] = useState([
@@ -101,6 +119,7 @@ export function Chat(p) {
         <img 
           src="/chatbot-profile-image.png" 
           alt="Alamin AI Tutor" 
+          decoding="async"
           style=${{ 
             width: 38, 
             height: 38, 
@@ -130,24 +149,12 @@ export function Chat(p) {
       gap: 12, 
       paddingRight: 4 
     }}>
-      ${m.map(x => h`
-        <div class="msg-row ${x.b ? "bot" : "user"}">
-          <div class="avatar ${x.b ? "bot" : "user"}">
-            ${x.b 
-              ? h`<img src="/chatbot-profile-image.png" alt="Bot" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />` 
-              : h`<${User} size=${16} />`}
-          </div>
-          <div 
-            class="msg ${x.b ? "b" : "u"}" 
-            dangerouslySetInnerHTML=${{ __html: formatMarkdown(x.t) }} 
-          />
-        </div>
-      `)}
+      ${m.map((x, idx) => h`<${ChatMessage} key=${idx} item=${x} />`)}
 
       ${loading && h`
         <div class="msg-row bot">
           <div class="avatar bot">
-            <img src="/chatbot-profile-image.png" alt="Bot" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+            <img src="/chatbot-profile-image.png" alt="Bot" decoding="async" style=${{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
           </div>
           <div class="msg b" style=${{ display: "flex", alignItems: "center", gap: 6, fontStyle: "italic", opacity: 0.85 }}>
             <${Sparkles} size=${14} />

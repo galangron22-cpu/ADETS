@@ -5,10 +5,13 @@ import { useState, useEffect } from "react";
 const DB_NAME = "alamin_offline_db";
 const DB_VERSION = 2;
 
+let dbPromise = null;
+
 function openDB() {
-  return new Promise((resolve, reject) => {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
+    req.onupgradeneeded = () => {
       const db = req.result;
       if (!db.objectStoreNames.contains("kv")) {
         db.createObjectStore("kv");
@@ -20,9 +23,23 @@ function openDB() {
         db.createObjectStore("attempts", { keyPath: "attempt_id" });
       }
     };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const db = req.result;
+      db.onversionchange = () => {
+        db.close();
+        dbPromise = null;
+      };
+      db.onclose = () => {
+        dbPromise = null;
+      };
+      resolve(db);
+    };
+    req.onerror = () => {
+      dbPromise = null;
+      reject(req.error);
+    };
   });
+  return dbPromise;
 }
 
 export async function get(k) {

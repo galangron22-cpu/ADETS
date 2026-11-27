@@ -150,6 +150,7 @@ export default function StudentApp() {
     verifyLearnerSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT" || !session?.user) {
         setUser(null);
         setScr("login");
@@ -167,6 +168,15 @@ export default function StudentApp() {
       subscription.unsubscribe();
       window.removeEventListener("pageshow", onPageShow);
     };
+  }, []);
+
+  // Hydrate offline downloaded question bundles from IndexedDB once on mount
+  useEffect(() => {
+    getAllDownloadedSets().then(bundles => {
+      const validBundles = (bundles || []).filter(b => isCloudId(b?.id));
+      setOfflineBundles(validBundles);
+      setSaved(validBundles.map(b => b.id));
+    });
   }, []);
 
   const isCloudId = id => typeof id === "string" && id.includes("-");
@@ -232,44 +242,38 @@ export default function StudentApp() {
     } catch (e) {}
   };
 
-  // Fetch live strands, published sets, and cloud history when online; load real offline bundles from IndexedDB
+  // Fetch live strands and published sets when online (skip auth header overhead on public endpoints)
   useEffect(() => {
-    getAllDownloadedSets().then(bundles => {
-      const validBundles = (bundles || []).filter(b => isCloudId(b?.id));
-      setOfflineBundles(validBundles);
-      setSaved(validBundles.map(b => b.id));
-    });
+    if (!online) return;
 
-    if (online) {
-      fetchApi("/api/strands")
-        .then(res => {
-          if (res.strands && res.strands.length > 0) {
-            setStrands(res.strands.map((s, idx) => ({
-              id: idx,
-              strand_id: s.strand_id,
-              code: s.code,
-              name: `Strand ${idx + 1} – ${s.name}`,
-              rawName: s.name
-            })));
-          }
-        })
-        .catch(() => {});
+    fetchApi("/api/strands", { auth: false })
+      .then(res => {
+        if (res.strands && res.strands.length > 0) {
+          setStrands(res.strands.map((s, idx) => ({
+            id: idx,
+            strand_id: s.strand_id,
+            code: s.code,
+            name: `Strand ${idx + 1} – ${s.name}`,
+            rawName: s.name
+          })));
+        }
+      })
+      .catch(() => {});
 
-      fetchApi("/api/question-sets")
-        .then(res => {
-          if (Array.isArray(res.question_sets)) {
-            setLiveSets(res.question_sets.map(s => ({
-              id: s.id,
-              strand_id: s.strand_id,
-              title: s.title,
-              ver: s.ver,
-              status: s.status,
-              question_count: s.question_count ?? 0
-            })));
-          }
-        })
-        .catch(() => {});
-    }
+    fetchApi("/api/question-sets", { auth: false })
+      .then(res => {
+        if (Array.isArray(res.question_sets)) {
+          setLiveSets(res.question_sets.map(s => ({
+            id: s.id,
+            strand_id: s.strand_id,
+            title: s.title,
+            ver: s.ver,
+            status: s.status,
+            question_count: s.question_count ?? 0
+          })));
+        }
+      })
+      .catch(() => {});
   }, [online]);
 
   // Fetch and merge learner's cloud attempt history when authenticated and online
@@ -286,7 +290,7 @@ export default function StudentApp() {
       onlineBundles.find(b => b.id === setId);
     if (existing) return existing;
 
-    const res = await fetchApi(`/api/question-sets/${setId}/download`);
+    const res = await fetchApi(`/api/question-sets/${setId}/download`, { auth: false });
     if (!res?.bundle) {
       throw new Error("Question set bundle is unavailable.");
     }
@@ -299,7 +303,7 @@ export default function StudentApp() {
     setDownloadingId(setId);
     try {
       say("Downloading set for offline use...");
-      const res = await fetchApi(`/api/question-sets/${setId}/download`);
+      const res = await fetchApi(`/api/question-sets/${setId}/download`, { auth: false });
       if (res?.bundle) {
         await saveDownloadedSet(res.bundle);
         setOfflineBundles(prev => [...prev.filter(b => b.id !== setId), res.bundle]);

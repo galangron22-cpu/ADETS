@@ -3,7 +3,7 @@
  * Coordinates sidebar navigation, AI question generation, question authoring/approval submissions,
  * question set publishing, account governance (Admin only), and analytics reports.
  */
-import { useState } from "react";
+import { useState, useRef, useMemo } from "react";
 import { h } from "../shared/html.js";
 import { fetchApi } from "../shared/supabase.js";
 import { Dash } from "./Dashboard.jsx";
@@ -27,6 +27,8 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
   const [ed, setEd] = useState(null);
   const [f, setF] = useState({ q: "", s: "", st: "", diff: "" });
   const [loading, setLoading] = useState(false);
+  const strandsCacheRef = useRef(null);
+  const topicsCacheRef = useRef(new Map());
 
   const reloadQuestions = async () => {
     try {
@@ -37,7 +39,7 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
 
   const reloadSets = async () => {
     try {
-      const res = await fetchApi("/api/question-sets");
+      const res = await fetchApi("/api/question-sets", { auth: false });
       if (res.question_sets) setSets(res.question_sets);
     } catch (e) {}
   };
@@ -69,12 +71,20 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
     }
 
     try {
-      const strandsRes = await fetchApi("/api/strands");
-      const strandObj = strandsRes.strands?.[n.strand || 0];
+      if (!strandsCacheRef.current) {
+        const strandsRes = await fetchApi("/api/strands", { auth: false });
+        if (strandsRes?.strands) strandsCacheRef.current = strandsRes.strands;
+      }
+      const strandObj = strandsCacheRef.current?.[n.strand || 0];
       let topicId = n.topic_id || null;
       if (strandObj && (n.isNew || strandObj.strand_id !== n.strand_id || !topicId)) {
-        const topicsRes = await fetchApi(`/api/strands/${strandObj.strand_id}/topics`);
-        topicId = topicsRes.topics?.[0]?.topic_id || topicId;
+        let cachedTopic = topicsCacheRef.current.get(strandObj.strand_id);
+        if (!cachedTopic) {
+          const topicsRes = await fetchApi(`/api/strands/${strandObj.strand_id}/topics`, { auth: false });
+          cachedTopic = topicsRes.topics?.[0]?.topic_id || null;
+          if (cachedTopic) topicsCacheRef.current.set(strandObj.strand_id, cachedTopic);
+        }
+        topicId = cachedTopic || topicId;
       }
 
       if (n.isNew) {
@@ -116,7 +126,7 @@ export function TeacherLayout({ profile, qs, setQs, sets, setSets, acc, setAcc, 
     }
   };
 
-  const pendingQuestionsCount = qs.filter(q => q.status === "Pending").length;
+  const pendingQuestionsCount = useMemo(() => qs.filter(q => q.status === "Pending").length, [qs]);
 
   const navItems = [
     { label: "Dashboard", id: "Dashboard", icon: LayoutDashboard },

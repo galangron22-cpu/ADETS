@@ -2,9 +2,9 @@
  * Learner mastery & assessment history dashboard.
  * Computes per-strand averages against the 75% ALS passing benchmark and manually syncs queued offline attempts.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { h } from "../shared/html.js";
-import { S, sets_of } from "../shared/data.js";
+import { S } from "../shared/data.js";
 import { 
   RefreshCw, 
   CheckCircle2, 
@@ -36,41 +36,53 @@ export function Prog(p) {
 
   const strands = p.strands || S;
 
+  const setsById = useMemo(() => {
+    const map = new Map();
+    for (const b of p.offlineBundles || []) map.set(b.id, b);
+    for (const s of p.sets || []) map.set(s.id, s);
+    return map;
+  }, [p.sets, p.offlineBundles]);
+
   // Calculate local & synced strand statistics from p.att
-  const strandStats = strands.map((s, idx) => {
-    const attempts = p.att.filter(x => {
-      if (x.strand_id && s.strand_id) {
-        return x.strand_id === s.strand_id;
-      }
-      const setStrand = sets_of(p, x.set || x.question_set_id || x.set_id);
-      if (setStrand) {
-        return setStrand === s.strand_id || setStrand === s.id;
-      }
-      return false;
+  const strandStats = useMemo(() => {
+    return strands.map((s, idx) => {
+      const attempts = p.att.filter(x => {
+        if (x.strand_id && s.strand_id) {
+          return x.strand_id === s.strand_id;
+        }
+        const setObj = setsById.get(x.set ?? x.question_set_id ?? x.set_id);
+        const setStrand = setObj ? (setObj.strand_id ?? setObj.strand) : null;
+        if (setStrand !== null && setStrand !== undefined) {
+          return setStrand === s.strand_id || setStrand === s.id;
+        }
+        return false;
+      });
+
+      const avg = attempts.length
+        ? Math.round(attempts.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / attempts.length * 100)
+        : 0;
+
+      return {
+        ...s,
+        idx,
+        attemptsCount: attempts.length,
+        avg,
+        isMastered: avg >= 75
+      };
     });
+  }, [strands, p.att, setsById]);
 
-    const avg = attempts.length 
-      ? Math.round(attempts.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / attempts.length * 100) 
-      : 0;
-
-    return {
-      ...s,
-      idx,
-      attemptsCount: attempts.length,
-      avg,
-      isMastered: avg >= 75
-    };
-  });
-
-  const pendingAttempts = p.att.filter(x => !x.sync);
+  const pendingAttempts = useMemo(() => p.att.filter(x => !x.sync), [p.att]);
   const pend = pendingAttempts.length;
 
-  const attemptedStrands = strandStats.filter(s => s.attemptsCount > 0);
-  const overallMastery = attemptedStrands.length
-    ? Math.round(attemptedStrands.reduce((sum, s) => sum + s.avg, 0) / attemptedStrands.length)
-    : 0;
-
-  const masteredCount = strandStats.filter(s => s.attemptsCount > 0 && s.isMastered).length;
+  const { overallMastery, masteredCount } = useMemo(() => {
+    const attemptedStrands = strandStats.filter(s => s.attemptsCount > 0);
+    const overall = attemptedStrands.length
+      ? Math.round(attemptedStrands.reduce((sum, s) => sum + s.avg, 0) / attemptedStrands.length)
+      : 0;
+    const mastered = strandStats.filter(s => s.attemptsCount > 0 && s.isMastered).length;
+    return { overallMastery: overall, masteredCount: mastered };
+  }, [strandStats]);
 
   const isSyncing = Boolean(p.syncing || localSyncing);
   const activeMsg = msg || p.syncError || "";

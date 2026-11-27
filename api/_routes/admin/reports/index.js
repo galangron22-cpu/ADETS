@@ -31,18 +31,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Fetch dashboard stats
-    const { count: learnersCount } = await client
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("role", "Learner");
-
-    const { count: pendingQsCount } = await client
-      .from("questions")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "Pending");
-
-    // 2. Fetch attempts with filters
+    // 1 & 2. Fetch dashboard counts and filtered attempts in parallel
     let query = client
       .from("quiz_attempts")
       .select(`
@@ -70,7 +59,16 @@ export default async function handler(req, res) {
       query = query.lte("completed_at", end.toISOString());
     }
 
-    const { data: rawAttempts, error: attErr } = await query;
+    const [
+      { count: learnersCount },
+      { count: pendingQsCount },
+      { data: rawAttempts, error: attErr }
+    ] = await Promise.all([
+      client.from("profiles").select("*", { count: "exact", head: true }).eq("role", "Learner"),
+      client.from("questions").select("*", { count: "exact", head: true }).eq("status", "Pending"),
+      query
+    ]);
+
     if (attErr) return json(res, 500, { error: attErr.message });
 
     let attempts = rawAttempts || [];

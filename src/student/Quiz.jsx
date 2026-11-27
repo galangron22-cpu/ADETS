@@ -3,7 +3,7 @@
  * Loads downloaded IndexedDB question bundles or fallback items, tracks countdown timer with auto-submit,
  * prompts on incomplete submission, and records attempts locally.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, memo } from "react";
 import { h } from "../shared/html.js";
 import { fmt } from "../shared/data.js";
 import { 
@@ -14,6 +14,50 @@ import {
   AlertCircle,
   RefreshCw
 } from "../shared/icons.js";
+
+/** Isolated 1-second timer badge so ticks do not re-render question cards or choice inputs. */
+const QuizTimer = memo(function QuizTimer({ totalSeconds, paused, onExpire }) {
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
+
+  useEffect(() => {
+    if (totalSeconds > 0) setTimeLeft(totalSeconds);
+  }, [totalSeconds]);
+
+  useEffect(() => {
+    if (paused || totalSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          onExpireRef.current();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [paused, totalSeconds]);
+
+  return h`
+    <div 
+      class="badge" 
+      style=${{ 
+        display: "inline-flex", 
+        alignItems: "center", 
+        gap: 6, 
+        fontSize: 13, 
+        fontWeight: 700,
+        color: timeLeft <= 60 ? "var(--bad)" : "inherit",
+        borderColor: timeLeft <= 60 ? "var(--bad)" : "var(--bd)"
+      }}
+    >
+      <${Clock} size=${14} />
+      <span style=${{ fontVariantNumeric: "tabular-nums" }}>${fmt(timeLeft)}</span>
+    </div>
+  `;
+});
 
 /** Generates an RFC-4122 v4 UUID even on non-HTTPS origins where `crypto.randomUUID` is unavailable. */
 function createAttemptUuid() {
@@ -97,14 +141,7 @@ export function Quiz(p) {
   const [i, setI] = useState(0);
   const [a, setA] = useState({});
   const [startedAt] = useState(() => new Date().toISOString());
-  const [timeLeft, setTimeLeft] = useState(qq.length * 60); // 1 min per question
   const [warn, setWarn] = useState("");
-
-  useEffect(() => {
-    if (qq.length > 0) {
-      setTimeLeft(prev => (prev === 0 ? qq.length * 60 : prev));
-    }
-  }, [qq.length]);
 
   const submitQuiz = () => {
     const sc = qq.filter(x => a[x.id] === x.ans).length;
@@ -134,22 +171,6 @@ export function Quiz(p) {
 
   const submitRef = useRef(submitQuiz);
   submitRef.current = submitQuiz;
-
-  // Timer & TC-QUIZ-04: Auto-submit when timer reaches 00:00
-  useEffect(() => {
-    if (loadingBundle || loadErr || qq.length === 0) return;
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          submitRef.current();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [qq.length, loadingBundle, loadErr]);
 
   if (loadingBundle) {
     return h`<div class="card mu" style=${{ textAlign: "center", padding: 32, maxWidth: 520, margin: "0 auto", width: "100%" }}>
@@ -208,21 +229,11 @@ export function Quiz(p) {
           ${p.T("Question")} ${i + 1} ${p.T("of")} ${qq.length}
         </span>
       </div>
-      <div 
-        class="badge" 
-        style=${{ 
-          display: "inline-flex", 
-          alignItems: "center", 
-          gap: 6, 
-          fontSize: 13, 
-          fontWeight: 700,
-          color: timeLeft <= 60 ? "var(--bad)" : "inherit",
-          borderColor: timeLeft <= 60 ? "var(--bad)" : "var(--bd)"
-        }}
-      >
-        <${Clock} size=${14} />
-        <span style=${{ fontVariantNumeric: "tabular-nums" }}>${fmt(timeLeft)}</span>
-      </div>
+      <${QuizTimer}
+        totalSeconds=${qq.length * 60}
+        paused=${loadingBundle || Boolean(loadErr)}
+        onExpire=${() => submitRef.current()}
+      />
     </div>
 
     <!-- Progress Bar -->

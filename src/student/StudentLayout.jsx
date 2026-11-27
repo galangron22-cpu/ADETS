@@ -3,9 +3,9 @@
  * Renders the top desktop/mobile brand bar, floating bottom navigation dock, Home strand explorer
  * (with mastery card, AI tutor launcher, search & filter pills), Topics/Sets picker, and active view screens.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, memo } from "react";
 import { h } from "../shared/html.js";
-import { S, TOP, sets_of } from "../shared/data.js";
+import { S, TOP } from "../shared/data.js";
 import { supabase } from "../shared/supabase.js";
 import { Login } from "./Login.jsx";
 import { Quiz } from "./Quiz.jsx";
@@ -47,32 +47,36 @@ const STRAND_ICONS = [
   Globe           // LS5: Understanding Self & Society
 ];
 
-export function StudentLayout(p) {
-  const { T, online, go, scr, user, att, saved, strands = S, sets } = p;
+const NAV_ITEMS = [
+  { label: "Home", id: "home", icon: Home },
+  { label: "Progress", id: "progress", icon: TrendingUp },
+  { label: "AI Tutor", id: "chat", icon: MessageSquare }
+];
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilter, setActiveFilter] = useState("all");
-  const [topicTab, setTopicTab] = useState("sets");
-  const [showProfile, setShowProfile] = useState(false);
+/**
+ * Isolated rAF-throttled scroll hook so dock hide/show transitions only re-render the dock/CTA,
+ * avoiding costly full-screen layout re-renders during mobile scrolling.
+ */
+function useDockHidden(scr, active) {
   const [dockHidden, setDockHidden] = useState(false);
   const lastScrollY = useRef(0);
+  const rafRef = useRef(0);
 
-  // Reset dock visibility whenever navigating between screens
   useEffect(() => {
     setDockHidden(false);
     lastScrollY.current = typeof window !== "undefined" ? Math.max(0, window.scrollY || 0) : 0;
   }, [scr]);
 
-  // Sink bottom dock on scroll down, resurface on scroll up
   useEffect(() => {
-    if (scr === "login" || !user) return;
+    if (!active) return;
 
-    const handleScroll = () => {
+    const updateFromScroll = () => {
+      rafRef.current = 0;
       const currentY = Math.max(0, window.scrollY || document.documentElement.scrollTop || 0);
       const delta = currentY - lastScrollY.current;
 
       if (currentY <= 24) {
-        setDockHidden(false);
+        setDockHidden(prev => (prev ? false : prev));
         lastScrollY.current = currentY;
         return;
       }
@@ -80,42 +84,36 @@ export function StudentLayout(p) {
       if (Math.abs(delta) < 6) return;
 
       if (delta > 0 && currentY > 40) {
-        setDockHidden(true);
+        setDockHidden(prev => (prev ? prev : true));
       } else if (delta < 0) {
-        setDockHidden(false);
+        setDockHidden(prev => (prev ? false : prev));
       }
 
       lastScrollY.current = currentY;
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [scr, user]);
+    const onScroll = () => {
+      if (!rafRef.current) {
+        rafRef.current = window.requestAnimationFrame(updateFromScroll);
+      }
+    };
 
-  if (scr === "login" || !user) {
-    return h`<${Login} ...${p} />`;
-  }
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, [active]);
 
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (e) {}
-    p.setUser(null);
-    go("login", {});
-  };
+  return dockHidden;
+}
 
-  // 3 Primary Navigation Items for the Bottom Island (No Sign Out button here)
-  const navItems = [
-    { label: "Home", id: "home", icon: Home },
-    { label: "Progress", id: "progress", icon: TrendingUp },
-    { label: "AI Tutor", id: "chat", icon: MessageSquare }
-  ];
-
-  // Floating iOS Bottom Navigation Dock (3 clean tabs, sinks on scroll down, rises on scroll up)
-  const floatingDock = h`
+const FloatingDock = memo(function FloatingDock({ scr, go, T }) {
+  const dockHidden = useDockHidden(scr, true);
+  return h`
     <div class="ios-dock-wrapper ${dockHidden ? "dock-hidden" : ""}">
       <nav class="ios-dock" aria-hidden=${dockHidden}>
-        ${navItems.map(item => {
+        ${NAV_ITEMS.map(item => {
           const Icon = item.icon;
           const isActive = scr === item.id;
           return h`
@@ -132,6 +130,92 @@ export function StudentLayout(p) {
       </nav>
     </div>
   `;
+});
+
+const TopicsBottomCta = memo(function TopicsBottomCta({ scr, onStart }) {
+  const dockHidden = useDockHidden(scr, true);
+  return h`
+    <div class="ios-bottom-cta-wrap ${dockHidden ? "dock-hidden" : ""}">
+      <button 
+        type="button" 
+        class="ios-bottom-cta-btn" 
+        onClick=${onStart}
+      >
+        <span>Start Practice Assessment</span>
+        <${ArrowRight} size=${18} />
+      </button>
+    </div>
+  `;
+});
+
+export function StudentLayout(p) {
+  const { T, online, go, scr, user, att, saved, strands = S, sets } = p;
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [topicTab, setTopicTab] = useState("sets");
+  const [showProfile, setShowProfile] = useState(false);
+
+  const setsById = useMemo(() => {
+    const map = new Map();
+    for (const b of p.offlineBundles || []) map.set(b.id, b);
+    for (const s of sets || []) map.set(s.id, s);
+    return map;
+  }, [sets, p.offlineBundles]);
+
+  const { pr, overallProgress } = useMemo(() => {
+    const scores = strands.map(s => {
+      const a = att.filter(x => {
+        if (x.strand_id && s.strand_id) {
+          return x.strand_id === s.strand_id;
+        }
+        const setObj = setsById.get(x.set ?? x.question_set_id ?? x.set_id);
+        const setStrand = setObj ? (setObj.strand_id ?? setObj.strand) : null;
+        if (setStrand !== null && setStrand !== undefined) {
+          return setStrand === s.strand_id || setStrand === s.id;
+        }
+        return false;
+      });
+      return a.length ? Math.round(a.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / a.length * 100) : 0;
+    });
+    const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    return { pr: scores, overallProgress: avg };
+  }, [strands, att, setsById]);
+
+  const strandIndexByCode = useMemo(() => {
+    const map = new Map();
+    strands.forEach((s, i) => map.set(s.code, i));
+    return map;
+  }, [strands]);
+
+  const strandSetCount = useMemo(() => {
+    const counts = new Map();
+    for (const s of strands) {
+      let c = 0;
+      for (const x of sets || []) {
+        if ((s.strand_id && x.strand_id === s.strand_id) || x.strand === s.id || x.strand_id === s.id) {
+          c++;
+        }
+      }
+      counts.set(s.strand_id ?? s.id, c);
+    }
+    return counts;
+  }, [strands, sets]);
+
+  if (scr === "login" || !user) {
+    return h`<${Login} ...${p} />`;
+  }
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (e) {}
+    p.setUser(null);
+    go("login", {});
+  };
+
+  // Floating iOS Bottom Navigation Dock (3 clean tabs, sinks on scroll down, rises on scroll up)
+  const floatingDock = h`<${FloatingDock} scr=${scr} go=${go} T=${T} />`;
 
   // Desktop Top App Bar (Branding on left, Avatar on right, NO duplicate nav tabs, NO online tag)
   const desktopAppBar = h`
@@ -142,6 +226,7 @@ export function StudentLayout(p) {
             <img
               src="/alamin_logo_cutout.png"
               alt="ALAMIN"
+              decoding="async"
               class="brand-logo-img"
               style=${{ height: 42 }}
             />
@@ -167,21 +252,6 @@ export function StudentLayout(p) {
   let body;
 
   if (scr === "home") {
-    const pr = strands.map((s, idx) => {
-      const a = att.filter(x => {
-        if (x.strand_id && s.strand_id) {
-          return x.strand_id === s.strand_id;
-        }
-        const setStrand = sets_of(p, x.set || x.question_set_id || x.set_id);
-        if (setStrand) {
-          return setStrand === s.strand_id || setStrand === s.id;
-        }
-        return false;
-      });
-      return a.length ? Math.round(a.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / a.length * 100) : 0;
-    });
-
-    const overallProgress = pr.length ? Math.round(pr.reduce((a, b) => a + b, 0) / pr.length) : 0;
     const completedAttemptsCount = att.length;
 
     // Filter strands based on search and pill filter
@@ -205,6 +275,7 @@ export function StudentLayout(p) {
           <img
             src="/alamin_logo_cutout.png"
             alt="ALAMIN"
+            decoding="async"
             class="brand-logo-img"
             style=${{ height: 34 }}
           />
@@ -296,6 +367,7 @@ export function StudentLayout(p) {
           <img 
             src="/chatbot-profile-image.png" 
             alt="Alamin AI Study Assistant" 
+            decoding="async"
             class="ios-ai-avatar" 
           />
           <div style=${{ flex: 1, minWidth: 0 }}>
@@ -387,15 +459,11 @@ export function StudentLayout(p) {
       <!-- Responsive Strands Grid (1 col mobile, 2 col tablet, 3 col desktop) -->
       <div class="strands-responsive-grid">
         ${filteredStrands.map((s, idx) => {
-          const originalIndex = strands.findIndex(orig => orig.code === s.code);
-          const strandIndex = originalIndex >= 0 ? originalIndex : idx;
+          const mappedIdx = strandIndexByCode.get(s.code);
+          const strandIndex = mappedIdx !== undefined ? mappedIdx : idx;
           const IconComponent = STRAND_ICONS[strandIndex % STRAND_ICONS.length] || BookOpen;
           const progressVal = pr[strandIndex] || 0;
-          const strandSetsCount = sets.filter(x => 
-            (s.strand_id && x.strand_id === s.strand_id) || 
-            x.strand === s.id ||
-            x.strand_id === s.id
-          ).length;
+          const strandSetsCount = strandSetCount.get(s.strand_id ?? s.id) ?? 0;
 
           return h`
             <div 
@@ -592,16 +660,10 @@ export function StudentLayout(p) {
 
       <!-- Bottom Floating CTA Button -->
       ${readySet && h`
-        <div class="ios-bottom-cta-wrap ${dockHidden ? "dock-hidden" : ""}">
-          <button 
-            type="button" 
-            class="ios-bottom-cta-btn" 
-            onClick=${() => go("quiz", { set: readySet.id, strand_id: readySet.strand_id || st.strand_id })}
-          >
-            <span>Start Practice Assessment</span>
-            <${ArrowRight} size=${18} />
-          </button>
-        </div>
+        <${TopicsBottomCta}
+          scr=${scr}
+          onStart=${() => go("quiz", { set: readySet.id, strand_id: readySet.strand_id || st.strand_id })}
+        />
       `}
     `;
   } else if (scr === "quiz") {

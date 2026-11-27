@@ -163,6 +163,7 @@ export function Login(p) {
           <img
             src="/alamin_logo_cutout.png"
             alt="ALAMIN"
+            decoding="async"
             class="brand-logo-img"
             style=${{ height: 84 }}
           />

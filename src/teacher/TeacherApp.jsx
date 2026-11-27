@@ -16,6 +16,7 @@ import {
   Sun, 
   Moon 
 } from "../shared/icons.js";
+import "./teacher.css";
 
 export default function TeacherApp() {
   const isAdminPath = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
@@ -84,6 +85,7 @@ export default function TeacherApp() {
     verifyStaffSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return;
       if (event === "SIGNED_OUT" || !session?.user) {
         setProfile(null);
         setAuthChecked(true);
@@ -112,7 +114,7 @@ export default function TeacherApp() {
       .catch(() => {});
 
     // Load question sets
-    fetchApi("/api/question-sets")
+    fetchApi("/api/question-sets", { auth: false })
       .then(res => res.question_sets && setSets(res.question_sets))
       .catch(() => {});
 
@@ -153,6 +155,7 @@ export default function TeacherApp() {
               <img
                 src="/alamin_logo_cutout.png"
                 alt="ALAMIN"
+                decoding="async"
                 class="brand-logo-img"
                 style=${{ height: 34 }}
               />

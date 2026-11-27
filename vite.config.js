@@ -41,6 +41,16 @@ function apiDevServerPlugin() {
 
 export default defineConfig({
   envPrefix: ["VITE_", "SUPABASE_"],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-supabase": ["@supabase/supabase-js"],
+          "vendor-chart": ["chart.js"]
+        }
+      }
+    }
+  },
   plugins: [
     apiDevServerPlugin(),
     react(),

@@ -13,11 +13,22 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   }
 });
 
-// Helper for authenticated API calls to Vercel Serverless /api/* endpoints
+let inFlightSessionPromise = null;
+
+async function getAccessToken() {
+  if (!inFlightSessionPromise) {
+    inFlightSessionPromise = supabase.auth.getSession().finally(() => {
+      inFlightSessionPromise = null;
+    });
+  }
+  const { data } = await inFlightSessionPromise;
+  return data?.session?.access_token || null;
+}
+
+// Helper for authenticated (or public with `{ auth: false }`) API calls to Vercel Serverless /api/* endpoints
 export async function fetchApi(endpoint, options = {}) {
-  const { _retried = false, ...fetchOptions } = options;
-  const session = (await supabase.auth.getSession()).data?.session;
-  const token = session?.access_token;
+  const { _retried = false, auth = true, ...fetchOptions } = options;
+  const token = auth ? await getAccessToken() : null;
 
   const headers = {
     "Content-Type": "application/json",
@@ -37,7 +48,7 @@ export async function fetchApi(endpoint, options = {}) {
   if (res.status === 401 && token && !_retried) {
     const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }));
     if (refreshed?.session?.access_token && refreshed.session.access_token !== token) {
-      return fetchApi(endpoint, { ...fetchOptions, _retried: true });
+      return fetchApi(endpoint, { ...fetchOptions, auth, _retried: true });
     }
   }
 

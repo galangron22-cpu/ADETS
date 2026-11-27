@@ -3,11 +3,22 @@
  * Filters quiz performance by strand and date range, renders a Chart.js dual-axis performance chart,
  * and exports learner summaries as CSV or printable PDF reports.
  */
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";
 import { fetchApi } from "../shared/supabase.js";
-import Chart from "chart.js/auto";
+import {
+  Chart,
+  BarController,
+  BarElement,
+  LineController,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend
+} from "chart.js";
 import { 
   FileSpreadsheet, 
   Printer, 
@@ -18,6 +29,18 @@ import {
   CheckCircle2, 
   AlertCircle 
 } from "../shared/icons.js";
+
+Chart.register(
+  BarController,
+  BarElement,
+  LineController,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Tooltip,
+  Legend
+);
 
 export function Rep({ say }) {
   const [strand, setStrand] = useState("");
@@ -156,23 +179,19 @@ export function Rep({ say }) {
   // TC-RPT-02: Export CSV
   const handleExportCsv = () => {
     if (rows.length === 0) return;
-    const params = new URLSearchParams();
-    if (strand) params.set("strand_id", strand);
-    if (startDate) params.set("start_date", startDate);
-    if (endDate) params.set("end_date", endDate);
-    params.set("format", "csv");
-
-    const csvContent = "data:text/csv;charset=utf-8," + 
+    const csvText =
       "Learner,Attempts,Average Score (%)\n" +
       rows.map(r => `"${r.learner.replace(/"/g, '""')}",${r.attempts},${r.avg}`).join("\n");
 
-    const encodedUri = encodeURI(csvContent);
+    const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `alamin_division_report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.href = url;
+    link.download = `alamin_division_report_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
     say("Exported CSV successfully");
   };
 
@@ -184,10 +203,17 @@ export function Rep({ say }) {
   };
 
   const hasData = rows.length > 0;
-  const totalAttempts = rows.reduce((acc, curr) => acc + (curr.attempts || 0), 0);
-  const averageScore = rows.length ? Math.round(rows.reduce((acc, curr) => acc + curr.avg, 0) / rows.length) : 0;
-  const passingLearners = rows.filter(r => r.avg >= 75).length;
-  const passingRate = rows.length ? Math.round((passingLearners / rows.length) * 100) : 0;
+  const { totalAttempts, averageScore, passingRate } = useMemo(() => {
+    if (!rows.length) return { totalAttempts: 0, averageScore: 0, passingRate: 0 };
+    const total = rows.reduce((acc, curr) => acc + (curr.attempts || 0), 0);
+    const avg = Math.round(rows.reduce((acc, curr) => acc + curr.avg, 0) / rows.length);
+    const passing = rows.filter(r => r.avg >= 75).length;
+    return {
+      totalAttempts: total,
+      averageScore: avg,
+      passingRate: Math.round((passing / rows.length) * 100)
+    };
+  }, [rows]);
 
   const setPresetRange = (days) => {
     if (!days) {

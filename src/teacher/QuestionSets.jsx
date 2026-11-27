@@ -2,7 +2,7 @@
  * Assessment package builder and publisher (`Sets`).
  * Bundles approved questions per ALS strand into draft reviewer sets and lets Admins publish them for learner offline sync.
  */
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";
 import { fetchApi } from "../shared/supabase.js";
@@ -22,28 +22,23 @@ export function Sets({ sets, setSets, qs, say, reloadSets }) {
   const [st, setSt] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Count approved questions for the selected strand
+  // Cache approved questions for the selected strand
   const selectedStrand = S[st] || S[0];
-  const approvedForStrand = qs.filter(q => 
-    q.status === "Approved" && 
+  const approvedQs = useMemo(() => qs.filter(q =>
+    q.status === "Approved" &&
     (q.strand === st || q.strand === selectedStrand.id || q.strand_code === selectedStrand.code)
-  ).length;
+  ), [qs, st, selectedStrand.id, selectedStrand.code]);
+  const approvedForStrand = approvedQs.length;
 
   const add = async () => {
     if (!t.trim()) return;
     setLoading(true);
     try {
       // Find strand_id from strands
-      const strandsRes = await fetchApi("/api/strands");
+      const strandsRes = await fetchApi("/api/strands", { auth: false });
       const strandObj = strandsRes.strands?.[st] || strandsRes.strands?.[0];
 
-      // Get approved questions for this strand to link
-      const approvedQs = qs.filter(q => 
-        q.status === "Approved" && 
-        (q.strand === st || q.strand === selectedStrand.id || q.strand_code === selectedStrand.code)
-      );
-
-      const res = await fetchApi("/api/admin/question-sets", {
+      await fetchApi("/api/admin/question-sets", {
         method: "POST",
         body: JSON.stringify({
           title: t.trim(),

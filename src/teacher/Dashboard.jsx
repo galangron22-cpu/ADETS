@@ -3,7 +3,7 @@
  * Displays learner/question/set summary metrics, priority pending review items,
  * ALS strand mastery chart, and quick actions for AI generation or creating question sets.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { h } from "../shared/html.js";
 import { S } from "../shared/data.js";
 import { fetchApi } from "../shared/supabase.js";
@@ -38,10 +38,15 @@ export function Dash({ qs = [], acc = [], sets = [], setPg, setEd, gen, loading 
       .catch(() => {});
   }, []);
 
-  const pendingQuestions = qs.filter(q => q.status === "Pending");
-  const pendingCount = pendingQuestions.length;
-  const learnersTotal = acc.filter(a => a.r === "Learner").length || stats.learners_count;
-  const publishedSetsCount = sets.filter(s => s.status === "Published").length || 5;
+  const { pendingQuestions, pendingCount, learnersTotal, publishedSetsCount } = useMemo(() => {
+    const pending = qs.filter(q => q.status === "Pending");
+    return {
+      pendingQuestions: pending,
+      pendingCount: pending.length,
+      learnersTotal: acc.filter(a => a.r === "Learner").length || stats.learners_count,
+      publishedSetsCount: sets.filter(s => s.status === "Published").length || 5
+    };
+  }, [qs, acc, sets, stats.learners_count]);
 
   return h`<div style=${{ display: "flex", flexDirection: "column", gap: 24 }}>
     
