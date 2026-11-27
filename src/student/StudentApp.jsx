@@ -4,7 +4,7 @@
  * bilingual translations (`T`), theme state, and shared navigation state.
  */
 // STUDENT PORTAL (route: /) – React PWA for ALS learners
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { usePersist, saveDownloadedSet, getAllDownloadedSets, removeDownloadedSet } from "../shared/db.js";
 import { useTheme, useToast } from "../shared/hooks.js";
@@ -30,11 +30,16 @@ export default function StudentApp() {
   const [authChecked, setAuthChecked] = useState(false);
   const [scr, setScr] = useState("login");
   const [ctx, setCtx] = useState({});
-  const [strands, setStrands] = useState(defaultStrands);
-  const [liveSets, setLiveSets] = useState(mkSets);
+  const [strands, setStrands] = usePersist("al-strands", defaultStrands);
+  const [liveSets, setLiveSets] = usePersist("al-sets", mkSets);
   const [offlineBundles, setOfflineBundles] = useState([]);
   const [saved, setSaved] = usePersist("al-saved", [1]);
   const [att, setAtt] = usePersist("al-att", []);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState("");
+  const attRef = useRef(att);
+  attRef.current = att;
+  const syncLockRef = useRef(false);
   const [toast, say] = useToast();
   const [installPrompt, setInstallPrompt] = useState(null);
 
@@ -64,15 +69,18 @@ export default function StudentApp() {
     if (c) setCtx(c);
   };
 
-  // Sync online status with browser events
+  // Sync online status with browser events and Android foreground/visibility wakeups
   useEffect(() => {
-    const onOnline = () => setOnline(true);
-    const onOffline = () => setOnline(false);
-    window.addEventListener("online", onOnline);
-    window.addEventListener("offline", onOffline);
+    const syncConnectivity = () => setOnline(navigator.onLine);
+    window.addEventListener("online", syncConnectivity);
+    window.addEventListener("offline", syncConnectivity);
+    window.addEventListener("focus", syncConnectivity);
+    document.addEventListener("visibilitychange", syncConnectivity);
     return () => {
-      window.removeEventListener("online", onOnline);
-      window.removeEventListener("offline", onOffline);
+      window.removeEventListener("online", syncConnectivity);
+      window.removeEventListener("offline", syncConnectivity);
+      window.removeEventListener("focus", syncConnectivity);
+      document.removeEventListener("visibilitychange", syncConnectivity);
     };
   }, []);
 
@@ -224,6 +232,128 @@ export default function StudentApp() {
     say("Removed from offline storage");
   };
 
+  const syncPending = async ({ silent = false } = {}) => {
+    const isActuallyOnline = typeof navigator === "undefined" ? true : navigator.onLine !== false;
+    if (isActuallyOnline && !online) {
+      setOnline(true);
+    }
+
+    if (!isActuallyOnline) {
+      const offlineMsg = "Device is offline. Assessments will automatically upload when reconnected.";
+      if (!silent) setSyncError(offlineMsg);
+      return { status: "offline", syncedIds: [], errors: [], message: offlineMsg };
+    }
+
+    const pending = (attRef.current || []).filter(x => !x.sync);
+    if (pending.length === 0) {
+      return { status: "empty", syncedIds: [], errors: [] };
+    }
+
+    if (syncLockRef.current) {
+      return { status: "busy", syncedIds: [], errors: [] };
+    }
+
+    syncLockRef.current = true;
+    setSyncing(true);
+    if (!silent) setSyncError("");
+
+    try {
+      const res = await fetchApi("/api/quiz-attempts/sync", {
+        method: "POST",
+        body: JSON.stringify({
+          attempts: pending.map(a => ({
+            attempt_id: a.attempt_id,
+            question_set_id: a.set ?? a.question_set_id ?? a.set_id,
+            started_at: a.started_at || a.completed_at || new Date().toISOString(),
+            completed_at: a.completed_at || new Date().toISOString(),
+            ans: a.ans || {},
+            total: a.total
+          }))
+        })
+      });
+
+      if (!res || typeof res !== "object" || !Array.isArray(res.synced_ids)) {
+        const msg = "Unexpected server response while syncing. Please check your connection and try again.";
+        setSyncError(msg);
+        return { status: "error", syncedIds: [], errors: [], message: msg };
+      }
+
+      if (res.synced_ids.length > 0) {
+        const syncedSet = new Set(res.synced_ids);
+        setAtt(prev => prev.map(x => (syncedSet.has(x.attempt_id) ? { ...x, sync: true } : x)));
+      }
+
+      const apiErrors = Array.isArray(res.errors) ? res.errors : [];
+      if (apiErrors.length > 0) {
+        const reason = apiErrors.map(e => e.error).filter(Boolean).join("; ") || "Sync rejected by server.";
+        const msg = res.synced_ids.length > 0
+          ? `Synced ${res.synced_ids.length} assessment(s), but ${apiErrors.length} failed: ${reason}`
+          : `Sync failed: ${reason}`;
+        setSyncError(msg);
+        if (res.synced_ids.length > 0) {
+          say(`Synced ${res.synced_ids.length} assessment(s) to cloud!`);
+        }
+        return { status: "error", syncedIds: res.synced_ids, errors: apiErrors, message: msg };
+      }
+
+      if (res.synced_ids.length === 0) {
+        const msg = "No assessments could be synced. Please sign in again or retry.";
+        setSyncError(msg);
+        return { status: "error", syncedIds: [], errors: [], message: msg };
+      }
+
+      setSyncError("");
+      say(`Synced ${res.synced_ids.length} assessment(s) to cloud!`);
+      return { status: "ok", syncedIds: res.synced_ids, errors: [] };
+    } catch (err) {
+      const lower = (err?.message || "").toLowerCase();
+      const msg = (lower.includes("401") || lower.includes("session") || lower.includes("auth") || lower.includes("jwt"))
+        ? "Session expired. Please sign in again to sync your progress."
+        : `Sync failed: ${err?.message || "Network error"}`;
+      if (!silent || !lower.includes("failed to fetch")) {
+        setSyncError(msg);
+      }
+      return { status: "error", syncedIds: [], errors: [{ error: msg }], message: msg };
+    } finally {
+      syncLockRef.current = false;
+      setSyncing(false);
+    }
+  };
+
+  const pendingCount = att.filter(x => !x.sync).length;
+  const autoSyncedOnlineRef = useRef(false);
+
+  // Automatically upload queued offline assessments when internet reconnects with an active session
+  useEffect(() => {
+    if (!user) {
+      setSyncError("");
+      autoSyncedOnlineRef.current = false;
+      return;
+    }
+    if (!online) {
+      autoSyncedOnlineRef.current = false;
+      return;
+    }
+    if (!authChecked || pendingCount === 0) {
+      if (pendingCount === 0) autoSyncedOnlineRef.current = false;
+      return;
+    }
+    if (autoSyncedOnlineRef.current) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!data?.session?.access_token) return;
+      } catch (e) {
+        return;
+      }
+      autoSyncedOnlineRef.current = true;
+      syncPending({ silent: true });
+    }, 600);
+
+    return () => clearTimeout(timer);
+  }, [online, authChecked, user, pendingCount]);
+
   const allSets = [...liveSets];
   for (const b of offlineBundles) {
     if (!allSets.some(s => s.id === b.id)) {
@@ -249,6 +379,10 @@ export default function StudentApp() {
     setSaved,
     att,
     setAtt,
+    syncPending,
+    syncing,
+    syncError,
+    clearSyncError: () => setSyncError(""),
     strands,
     sets: allSets,
     offlineBundles,

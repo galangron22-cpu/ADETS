@@ -14,6 +14,25 @@ import {
   AlertCircle 
 } from "../shared/icons.js";
 
+/** Generates an RFC-4122 v4 UUID even on non-HTTPS origins where `crypto.randomUUID` is unavailable. */
+function createAttemptUuid() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let idx = 0; idx < 16; idx++) {
+      bytes[idx] = Math.floor(Math.random() * 256);
+    }
+  }
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export function Quiz(p) {
   // Check if there is an offline bundle for this set
   const offlineBundle = (p.offlineBundles || []).find(b => b.id === p.ctx.set);
@@ -29,22 +48,25 @@ export function Quiz(p) {
 
   const [i, setI] = useState(0);
   const [a, setA] = useState({});
+  const [startedAt] = useState(() => new Date().toISOString());
   const [timeLeft, setTimeLeft] = useState(qq.length * 60); // 1 min per question
   const [warn, setWarn] = useState("");
 
   const submitQuiz = () => {
     const sc = qq.filter(x => a[x.id] === x.ans).length;
-    const attemptId = crypto.randomUUID ? crypto.randomUUID() : "att_" + Date.now();
+    const attemptId = createAttemptUuid();
+    const setId = set.id ?? p.ctx.set;
 
     const r = {
       attempt_id: attemptId,
-      set: set.id || p.ctx.set,
-      set_id: set.id || p.ctx.set,
-      question_set_id: set.id || p.ctx.set,
+      set: setId,
+      set_id: setId,
+      question_set_id: setId,
       strand_id: set.strand_id || (offlineBundle && offlineBundle.strand_id) || p.ctx.strand_id || null,
       score: sc,
       total: qq.length,
       date: new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
+      started_at: startedAt,
       completed_at: new Date().toISOString(),
       sync: false,
       ans: a,
@@ -52,7 +74,7 @@ export function Quiz(p) {
     };
 
     p.setAtt([r, ...p.att]);
-    p.go("score", { set: set.id || p.ctx.set, res: r, questions: qq });
+    p.go("score", { set: setId, res: r, questions: qq });
   };
 
   // Timer & TC-QUIZ-04: Auto-submit when timer reaches 00:00

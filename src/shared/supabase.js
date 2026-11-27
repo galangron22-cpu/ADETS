@@ -15,12 +15,13 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 // Helper for authenticated API calls to Vercel Serverless /api/* endpoints
 export async function fetchApi(endpoint, options = {}) {
+  const { _retried = false, ...fetchOptions } = options;
   const session = (await supabase.auth.getSession()).data?.session;
   const token = session?.access_token;
 
   const headers = {
     "Content-Type": "application/json",
-    ...(options.headers || {})
+    ...(fetchOptions.headers || {})
   };
 
   if (token) {
@@ -28,9 +29,17 @@ export async function fetchApi(endpoint, options = {}) {
   }
 
   const res = await fetch(endpoint, {
-    ...options,
+    ...fetchOptions,
     headers
   });
+
+  // Recover seamlessly if an offline device held a short-lived expired access token upon reconnect
+  if (res.status === 401 && token && !_retried) {
+    const { data: refreshed } = await supabase.auth.refreshSession().catch(() => ({ data: null }));
+    if (refreshed?.session?.access_token && refreshed.session.access_token !== token) {
+      return fetchApi(endpoint, { ...fetchOptions, _retried: true });
+    }
+  }
 
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {

@@ -33,7 +33,7 @@ const STRAND_ICONS = [
 ];
 
 export function Prog(p) {
-  const [syncing, setSyncing] = useState(false);
+  const [localSyncing, setLocalSyncing] = useState(false);
   const [msg, setMsg] = useState("");
   const [serverStats, setServerStats] = useState(null);
 
@@ -75,62 +75,49 @@ export function Prog(p) {
 
   const masteredCount = strandStats.filter(s => s.attemptsCount > 0 && s.isMastered).length;
 
-  // Load server-calculated progress if online
+  const isSyncing = Boolean(p.syncing || localSyncing);
+  const activeMsg = msg || p.syncError || "";
+
+  const refreshServerProgress = () => {
+    if (!(p.online || navigator.onLine)) return;
+    fetchApi("/api/progress")
+      .then(res => {
+        if (res?.strands) setServerStats(res);
+      })
+      .catch(() => {});
+  };
+
+  // Load server-calculated progress when online or after pending attempts clear
   useEffect(() => {
-    if (p.online) {
-      fetchApi("/api/progress")
-        .then(res => {
-          if (res.strands) setServerStats(res);
-        })
-        .catch(() => {});
-    }
-  }, [p.online]);
+    refreshServerProgress();
+  }, [p.online, pend]);
 
   const handleSync = async () => {
     setMsg("");
-
-    // TC-SYNC-02: Tap Sync while offline
-    if (!p.online) {
-      setMsg("Device is offline. Assessments will automatically upload when reconnected.");
-      return;
-    }
+    p.clearSyncError?.();
 
     if (pend === 0) {
       p.say("All quiz attempts are already synced to the cloud.");
       return;
     }
 
-    setSyncing(true);
+    setLocalSyncing(true);
     try {
-      // TC-SYNC-01 & TC-SYNC-03: Upload queued offline attempts to API
-      const res = await fetchApi("/api/quiz-attempts/sync", {
-        method: "POST",
-        body: JSON.stringify({
-          attempts: pendingAttempts.map(a => ({
-            attempt_id: a.attempt_id,
-            question_set_id: a.set || a.question_set_id,
-            started_at: a.completed_at || new Date().toISOString(),
-            completed_at: a.completed_at || new Date().toISOString(),
-            ans: a.ans || {},
-            total: a.total
-          }))
-        })
-      });
-
-      if (res.synced_ids && res.synced_ids.length > 0) {
-        const syncedSet = new Set(res.synced_ids);
-        p.setAtt(p.att.map(x => (syncedSet.has(x.attempt_id) ? { ...x, sync: true } : x)));
-        p.say(`Synced ${res.synced_ids.length} assessment(s) to cloud!`);
+      const outcome = await p.syncPending?.({ silent: false });
+      if (!outcome) {
+        setMsg("Sync handler unavailable. Please refresh and try again.");
+        return;
       }
-    } catch (err) {
-      // TC-SYNC-05: Session expired (401)
-      if (err.message.includes("401") || err.message.toLowerCase().includes("session") || err.message.toLowerCase().includes("auth")) {
-        setMsg("Session expired. Please sign in again to sync your progress.");
-      } else {
-        setMsg("Sync failed: " + err.message);
+      if (outcome.status === "empty") {
+        p.say("All quiz attempts are already synced to the cloud.");
+      } else if (outcome.message) {
+        setMsg(outcome.message);
+      }
+      if (outcome.syncedIds?.length > 0) {
+        refreshServerProgress();
       }
     } finally {
-      setSyncing(false);
+      setLocalSyncing(false);
     }
   };
 
@@ -146,17 +133,17 @@ export function Prog(p) {
         type="button"
         class="btn ${pend > 0 ? "p" : ""}" 
         style=${{ padding: "8px 14px", fontSize: 13, gap: 6 }}
-        disabled=${syncing} 
+        disabled=${isSyncing} 
         onClick=${handleSync}
         title="Sync offline quiz attempts to Supabase cloud"
       >
-        <${RefreshCw} size=${14} className=${syncing ? "spin" : ""} />
-        <span>${syncing ? "Syncing..." : pend > 0 ? `Sync (${pend})` : p.T("Sync")}</span>
+        <${RefreshCw} size=${14} className=${isSyncing ? "spin" : ""} />
+        <span>${isSyncing ? "Syncing..." : pend > 0 ? `Sync (${pend})` : p.T("Sync")}</span>
       </button>
     </div>
 
     <!-- Alert Message Banner -->
-    ${msg && h`
+    ${activeMsg && h`
       <div class="badge off" style=${{ 
         padding: "10px 14px", 
         display: "flex", 
@@ -167,7 +154,7 @@ export function Prog(p) {
         borderRadius: "var(--radius)"
       }}>
         <${AlertCircle} size=${16} style=${{ flexShrink: 0 }} />
-        <span>${msg}</span>
+        <span>${activeMsg}</span>
       </div>
     `}
 
