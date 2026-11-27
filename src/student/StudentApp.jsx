@@ -8,7 +8,7 @@ import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { usePersist, saveDownloadedSet, getAllDownloadedSets, removeDownloadedSet } from "../shared/db.js";
 import { useTheme, useToast } from "../shared/hooks.js";
-import { L, S as defaultStrands, mkQ, mkSets } from "../shared/data.js";
+import { L, S as defaultStrands, mkQ } from "../shared/data.js";
 import { supabase, fetchApi } from "../shared/supabase.js";
 import { StudentLayout } from "./StudentLayout.jsx";
 import { 
@@ -31,9 +31,11 @@ export default function StudentApp() {
   const [scr, setScr] = useState("login");
   const [ctx, setCtx] = useState({});
   const [strands, setStrands] = usePersist("al-strands", defaultStrands);
-  const [liveSets, setLiveSets] = usePersist("al-sets", mkSets);
+  const [liveSets, setLiveSets] = usePersist("al-sets", []);
   const [offlineBundles, setOfflineBundles] = useState([]);
-  const [saved, setSaved] = usePersist("al-saved", [1]);
+  const [onlineBundles, setOnlineBundles] = useState([]);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [saved, setSaved] = usePersist("al-saved", []);
   const [att, setAtt] = usePersist("al-att", []);
   const [syncing, setSyncing] = useState(false);
   const [syncError, setSyncError] = useState("");
@@ -167,14 +169,75 @@ export default function StudentApp() {
     };
   }, []);
 
-  // Fetch live strands and sets when online, load offline bundles from IndexedDB
+  const isCloudId = id => typeof id === "string" && id.includes("-");
+
+  const refreshCloudAttempts = async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      if (!data?.session?.access_token) return;
+      const res = await fetchApi("/api/quiz-attempts");
+      if (!Array.isArray(res?.attempts)) return;
+      setAtt(prev => {
+        const cloudList = res.attempts;
+        const findMatch = (list, targetSetId, targetCompletedAt, targetAttemptId) =>
+          list.find(item =>
+            item.attempt_id === targetAttemptId ||
+            (targetCompletedAt &&
+              item.completed_at &&
+              item.completed_at === targetCompletedAt &&
+              (item.set ?? item.question_set_id ?? item.set_id ?? item.setId) === targetSetId)
+          );
+
+        const next = (prev || []).map(local => {
+          const localSetId = local.set ?? local.question_set_id ?? local.set_id;
+          const match = findMatch(
+            cloudList.map(c => ({ ...c, setId: c.set_id })),
+            localSetId,
+            local.completed_at,
+            local.attempt_id
+          );
+          return match
+            ? {
+                ...local,
+                sync: true,
+                set_title: local.set_title || match.set_title || "",
+                strand_id: local.strand_id || match.strand_id || null
+              }
+            : local;
+        });
+
+        for (const c of cloudList) {
+          const exists = findMatch(next, c.set_id, c.completed_at, c.attempt_id);
+          if (!exists) {
+            next.push({
+              attempt_id: c.attempt_id,
+              set: c.set_id,
+              set_id: c.set_id,
+              question_set_id: c.set_id,
+              set_title: c.set_title || "",
+              strand_id: c.strand_id || null,
+              score: c.score,
+              total: c.total,
+              date: c.completed_at
+                ? new Date(c.completed_at).toLocaleDateString("en-US", { month: "numeric", day: "numeric" })
+                : "Recent",
+              completed_at: c.completed_at,
+              sync: true
+            });
+          }
+        }
+
+        return next.sort((a, b) => new Date(b.completed_at || 0) - new Date(a.completed_at || 0));
+      });
+    } catch (e) {}
+  };
+
+  // Fetch live strands, published sets, and cloud history when online; load real offline bundles from IndexedDB
   useEffect(() => {
     getAllDownloadedSets().then(bundles => {
-      setOfflineBundles(bundles);
-      if (bundles.length > 0) {
-        const savedIds = bundles.map(b => b.id);
-        setSaved(prev => Array.from(new Set([...prev, ...savedIds])));
-      }
+      const validBundles = (bundles || []).filter(b => isCloudId(b?.id));
+      setOfflineBundles(validBundles);
+      setSaved(validBundles.map(b => b.id));
     });
 
     if (online) {
@@ -194,14 +257,14 @@ export default function StudentApp() {
 
       fetchApi("/api/question-sets")
         .then(res => {
-          if (res.question_sets && res.question_sets.length > 0) {
-            setLiveSets(res.question_sets.map((s, idx) => ({
+          if (Array.isArray(res.question_sets)) {
+            setLiveSets(res.question_sets.map(s => ({
               id: s.id,
               strand_id: s.strand_id,
               title: s.title,
               ver: s.ver,
               status: s.status,
-              question_count: s.question_count || 10
+              question_count: s.question_count ?? 0
             })));
           }
         })
@@ -209,26 +272,51 @@ export default function StudentApp() {
     }
   }, [online]);
 
+  // Fetch and merge learner's cloud attempt history when authenticated and online
+  useEffect(() => {
+    if (online && authChecked && user) {
+      refreshCloudAttempts();
+    }
+  }, [online, authChecked, user]);
+
+  // Fetches an approved published set bundle for online play (without forcing offline storage)
+  const loadSetBundle = async (setId) => {
+    const existing =
+      offlineBundles.find(b => b.id === setId) ||
+      onlineBundles.find(b => b.id === setId);
+    if (existing) return existing;
+
+    const res = await fetchApi(`/api/question-sets/${setId}/download`);
+    if (!res?.bundle) {
+      throw new Error("Question set bundle is unavailable.");
+    }
+    setOnlineBundles(prev => [...prev.filter(b => b.id !== setId), res.bundle]);
+    return res.bundle;
+  };
+
   // Download question set bundle for offline use
   const handleDownload = async (setId) => {
+    setDownloadingId(setId);
     try {
       say("Downloading set for offline use...");
       const res = await fetchApi(`/api/question-sets/${setId}/download`);
-      if (res.bundle) {
+      if (res?.bundle) {
         await saveDownloadedSet(res.bundle);
         setOfflineBundles(prev => [...prev.filter(b => b.id !== setId), res.bundle]);
-        setSaved(prev => Array.from(new Set([...prev, setId])));
+        setSaved(prev => Array.from(new Set([...prev.filter(isCloudId), setId])));
         say("Downloaded for offline");
       }
     } catch (e) {
       say("Failed to download: " + e.message);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
   const handleRemove = async (setId) => {
     await removeDownloadedSet(setId);
     setOfflineBundles(prev => prev.filter(b => b.id !== setId));
-    setSaved(prev => prev.filter(id => id !== setId));
+    setSaved(prev => prev.filter(id => id !== setId && isCloudId(id)));
     say("Removed from offline storage");
   };
 
@@ -281,6 +369,7 @@ export default function StudentApp() {
       if (res.synced_ids.length > 0) {
         const syncedSet = new Set(res.synced_ids);
         setAtt(prev => prev.map(x => (syncedSet.has(x.attempt_id) ? { ...x, sync: true } : x)));
+        refreshCloudAttempts();
       }
 
       const apiErrors = Array.isArray(res.errors) ? res.errors : [];
@@ -354,7 +443,7 @@ export default function StudentApp() {
     return () => clearTimeout(timer);
   }, [online, authChecked, user, pendingCount]);
 
-  const allSets = [...liveSets];
+  const allSets = (liveSets || []).filter(s => isCloudId(s?.id));
   for (const b of offlineBundles) {
     if (!allSets.some(s => s.id === b.id)) {
       allSets.push({
@@ -363,7 +452,7 @@ export default function StudentApp() {
         title: b.title,
         ver: b.ver,
         status: "Published",
-        question_count: b.questions?.length || 10
+        question_count: b.questions?.length ?? 0
       });
     }
   }
@@ -386,6 +475,9 @@ export default function StudentApp() {
     strands,
     sets: allSets,
     offlineBundles,
+    onlineBundles,
+    loadSetBundle,
+    downloadingId,
     downloadSet: handleDownload,
     removeSet: handleRemove,
     qs: mkQ,

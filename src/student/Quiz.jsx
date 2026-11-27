@@ -3,7 +3,7 @@
  * Loads downloaded IndexedDB question bundles or fallback items, tracks countdown timer with auto-submit,
  * prompts on incomplete submission, and records attempts locally.
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { h } from "../shared/html.js";
 import { fmt } from "../shared/data.js";
 import { 
@@ -11,7 +11,8 @@ import {
   ChevronLeft, 
   ChevronRight, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  RefreshCw
 } from "../shared/icons.js";
 
 /** Generates an RFC-4122 v4 UUID even on non-HTTPS origins where `crypto.randomUUID` is unavailable. */
@@ -34,16 +35,63 @@ function createAttemptUuid() {
 }
 
 export function Quiz(p) {
-  // Check if there is an offline bundle for this set
-  const offlineBundle = (p.offlineBundles || []).find(b => b.id === p.ctx.set);
-  const set = (p.sets || []).find(s => s.id === p.ctx.set) || offlineBundle || {};
+  const setId = p.ctx.set;
+  const isCloudSet = typeof setId === "string" && setId.includes("-");
+  const cachedBundle =
+    (p.offlineBundles || []).find(b => b.id === setId) ||
+    (p.onlineBundles || []).find(b => b.id === setId);
+  const set = (p.sets || []).find(s => s.id === setId) || cachedBundle || {};
+
+  const [fetchedBundle, setFetchedBundle] = useState(null);
+  const [loadingBundle, setLoadingBundle] = useState(false);
+  const [loadErr, setLoadErr] = useState("");
+  const [retryKey, setRetryKey] = useState(0);
+
+  const activeBundle = cachedBundle || (fetchedBundle?.id === setId ? fetchedBundle : null);
+
+  // Load real Supabase questions automatically when an online learner opens an undownloaded published set
+  useEffect(() => {
+    if (!isCloudSet || cachedBundle || (fetchedBundle?.id === setId)) {
+      setLoadingBundle(false);
+      setLoadErr("");
+      return;
+    }
+
+    if (!(p.online || navigator.onLine)) {
+      setLoadingBundle(false);
+      setLoadErr("This assessment isn't downloaded for offline use yet. Reconnect to the internet or pick an Offline Ready set.");
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingBundle(true);
+    setLoadErr("");
+
+    (p.loadSetBundle ? p.loadSetBundle(setId) : Promise.reject(new Error("Question loader unavailable")))
+      .then(bundle => {
+        if (!cancelled) {
+          setFetchedBundle(bundle);
+          setLoadingBundle(false);
+        }
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setLoadErr(err?.message || "Failed to load assessment questions.");
+          setLoadingBundle(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [setId, isCloudSet, Boolean(cachedBundle), p.online, retryKey]);
 
   let qq = [];
-  if (offlineBundle && offlineBundle.questions && offlineBundle.questions.length > 0) {
-    qq = offlineBundle.questions;
-  } else {
+  if (activeBundle && Array.isArray(activeBundle.questions) && activeBundle.questions.length > 0) {
+    qq = activeBundle.questions;
+  } else if (!isCloudSet) {
     qq = p.qs.filter(q => (set.strand_id && q.strand_id === set.strand_id) || q.strand === set.strand);
-    if (!qq.length) qq = p.qs.slice(0, 5); // fallback
+    if (!qq.length) qq = p.qs.slice(0, 5); // fallback for non-cloud demos only
   }
 
   const [i, setI] = useState(0);
@@ -52,17 +100,24 @@ export function Quiz(p) {
   const [timeLeft, setTimeLeft] = useState(qq.length * 60); // 1 min per question
   const [warn, setWarn] = useState("");
 
+  useEffect(() => {
+    if (qq.length > 0) {
+      setTimeLeft(prev => (prev === 0 ? qq.length * 60 : prev));
+    }
+  }, [qq.length]);
+
   const submitQuiz = () => {
     const sc = qq.filter(x => a[x.id] === x.ans).length;
     const attemptId = createAttemptUuid();
-    const setId = set.id ?? p.ctx.set;
+    const resolvedSetId = set.id ?? setId;
 
     const r = {
       attempt_id: attemptId,
-      set: setId,
-      set_id: setId,
-      question_set_id: setId,
-      strand_id: set.strand_id || (offlineBundle && offlineBundle.strand_id) || p.ctx.strand_id || null,
+      set: resolvedSetId,
+      set_id: resolvedSetId,
+      question_set_id: resolvedSetId,
+      set_title: set.title || activeBundle?.title || "",
+      strand_id: set.strand_id || activeBundle?.strand_id || p.ctx.strand_id || null,
       score: sc,
       total: qq.length,
       date: new Date().toLocaleDateString("en-US", { month: "numeric", day: "numeric" }),
@@ -73,31 +128,62 @@ export function Quiz(p) {
       questions: qq
     };
 
-    p.setAtt([r, ...p.att]);
-    p.go("score", { set: setId, res: r, questions: qq });
+    p.setAtt(prev => [r, ...(prev || [])]);
+    p.go("score", { set: resolvedSetId, res: r, questions: qq });
   };
+
+  const submitRef = useRef(submitQuiz);
+  submitRef.current = submitQuiz;
 
   // Timer & TC-QUIZ-04: Auto-submit when timer reaches 00:00
   useEffect(() => {
+    if (loadingBundle || loadErr || qq.length === 0) return;
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          submitQuiz();
+          submitRef.current();
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [qq, a]);
+  }, [qq.length, loadingBundle, loadErr]);
+
+  if (loadingBundle) {
+    return h`<div class="card mu" style=${{ textAlign: "center", padding: 32, maxWidth: 520, margin: "0 auto", width: "100%" }}>
+      <${RefreshCw} size=${28} className="spin" style=${{ color: "var(--pr)", margin: "0 auto 12px auto" }} />
+      <b style=${{ fontSize: 15, color: "var(--tx)", display: "block" }}>Loading assessment questions...</b>
+      <p style=${{ margin: "6px 0 0 0", fontSize: 13 }}>Fetching approved questions for this set.</p>
+    </div>`;
+  }
+
+  if (loadErr) {
+    return h`<div class="card mu" style=${{ textAlign: "center", padding: 28, maxWidth: 520, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", gap: 12, alignItems: "center" }}>
+      <${AlertCircle} size=${28} color="var(--bad)" />
+      <b style=${{ fontSize: 15, color: "var(--tx)" }}>Unable to Load Quiz</b>
+      <p style=${{ margin: 0, fontSize: 13, lineHeight: 1.5 }}>${loadErr}</p>
+      <div class="row" style=${{ gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
+        ${(p.online || navigator.onLine) && h`
+          <button type="button" class="btn p" onClick=${() => setRetryKey(k => k + 1)}>
+            <${RefreshCw} size=${15} />
+            <span>Retry</span>
+          </button>
+        `}
+        <button type="button" class="btn" onClick=${() => p.go("home")}>
+          ${p.T("Return to Home")}
+        </button>
+      </div>
+    </div>`;
+  }
 
   const q = qq[i];
   if (!q) {
     return h`<div class="card mu" style=${{ textAlign: "center", padding: 24 }}>
       <p style=${{ fontSize: 14, fontWeight: 600 }}>No approved questions available for this set.</p>
-      <button class="btn p" style=${{ marginTop: 12 }} onClick=${() => p.go("home")}>
-        Return to Home
+      <button type="button" class="btn p" style=${{ marginTop: 12 }} onClick=${() => p.go("home")}>
+        ${p.T("Return to Home")}
       </button>
     </div>`;
   }
@@ -228,11 +314,11 @@ export function Quiz(p) {
         <${AlertCircle} size=${18} />
         <b style=${{ fontSize: 13.5 }}>${warn}</b>
       </div>
-      <div class="row" style=${{ justifyContent: "center", gap: 10 }}>
+      <div class="row" style=${{ justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
         <button 
           type="button"
           class="btn d" 
-          style=${{ flex: 1 }} 
+          style=${{ flex: "1 1 130px" }} 
           onClick=${submitQuiz}
         >
           ${p.T("Confirm Submit")}
@@ -240,7 +326,7 @@ export function Quiz(p) {
         <button 
           type="button"
           class="btn" 
-          style=${{ flex: 1 }} 
+          style=${{ flex: "1 1 130px" }} 
           onClick=${() => setWarn("")}
         >
           ${p.T("Keep Reviewing")}

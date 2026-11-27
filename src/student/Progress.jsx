@@ -2,16 +2,14 @@
  * Learner mastery & assessment history dashboard.
  * Computes per-strand averages against the 75% ALS passing benchmark and manually syncs queued offline attempts.
  */
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { h } from "../shared/html.js";
 import { S, sets_of } from "../shared/data.js";
-import { fetchApi } from "../shared/supabase.js";
 import { 
   RefreshCw, 
   CheckCircle2, 
   Clock, 
   Award, 
-  TrendingUp, 
   BookOpen, 
   FlaskConical, 
   Calculator, 
@@ -35,11 +33,10 @@ const STRAND_ICONS = [
 export function Prog(p) {
   const [localSyncing, setLocalSyncing] = useState(false);
   const [msg, setMsg] = useState("");
-  const [serverStats, setServerStats] = useState(null);
 
   const strands = p.strands || S;
 
-  // Calculate local strand statistics from p.att
+  // Calculate local & synced strand statistics from p.att
   const strandStats = strands.map((s, idx) => {
     const attempts = p.att.filter(x => {
       if (x.strand_id && s.strand_id) {
@@ -53,7 +50,7 @@ export function Prog(p) {
     });
 
     const avg = attempts.length 
-      ? Math.round(attempts.reduce((t, x) => t + (x.score / x.total), 0) / attempts.length * 100) 
+      ? Math.round(attempts.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / attempts.length * 100) 
       : 0;
 
     return {
@@ -78,20 +75,6 @@ export function Prog(p) {
   const isSyncing = Boolean(p.syncing || localSyncing);
   const activeMsg = msg || p.syncError || "";
 
-  const refreshServerProgress = () => {
-    if (!(p.online || navigator.onLine)) return;
-    fetchApi("/api/progress")
-      .then(res => {
-        if (res?.strands) setServerStats(res);
-      })
-      .catch(() => {});
-  };
-
-  // Load server-calculated progress when online or after pending attempts clear
-  useEffect(() => {
-    refreshServerProgress();
-  }, [p.online, pend]);
-
   const handleSync = async () => {
     setMsg("");
     p.clearSyncError?.();
@@ -113,9 +96,6 @@ export function Prog(p) {
       } else if (outcome.message) {
         setMsg(outcome.message);
       }
-      if (outcome.syncedIds?.length > 0) {
-        refreshServerProgress();
-      }
     } finally {
       setLocalSyncing(false);
     }
@@ -123,37 +103,35 @@ export function Prog(p) {
 
   return h`<div style=${{ display: "flex", flexDirection: "column", gap: 16 }}>
     
-    <!-- Top Header with Sync Action -->
-    <div class="row sp" style=${{ alignItems: "center" }}>
-      <div>
+    <!-- Top Header with Connection Status & Sync Action -->
+    <div class="row sp" style=${{ alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+      <div style=${{ minWidth: 0, flex: "1 1 180px" }}>
         <h2 style=${{ fontSize: 20 }}>${p.T("My Progress")}</h2>
         <span class="mu">Curriculum Mastery & Assessment History</span>
       </div>
-      <button 
-        type="button"
-        class="btn ${pend > 0 ? "p" : ""}" 
-        style=${{ padding: "8px 14px", fontSize: 13, gap: 6 }}
-        disabled=${isSyncing} 
-        onClick=${handleSync}
-        title="Sync offline quiz attempts to Supabase cloud"
-      >
-        <${RefreshCw} size=${14} className=${isSyncing ? "spin" : ""} />
-        <span>${isSyncing ? "Syncing..." : pend > 0 ? `Sync (${pend})` : p.T("Sync")}</span>
-      </button>
+      <div class="row" style=${{ gap: 8, flexShrink: 0 }}>
+        <span class="badge ${p.online ? "on" : "off"}" style=${{ fontSize: 11.5, padding: "4px 9px" }}>
+          <${p.online ? Wifi : WifiOff} size=${12} />
+          <span>${p.online ? p.T("Online") : p.T("Offline")}</span>
+        </span>
+        <button 
+          type="button"
+          class="btn ${pend > 0 ? "p" : ""}" 
+          style=${{ padding: "8px 14px", fontSize: 13, gap: 6 }}
+          disabled=${isSyncing} 
+          onClick=${handleSync}
+          title="Sync offline quiz attempts to Supabase cloud"
+        >
+          <${RefreshCw} size=${14} className=${isSyncing ? "spin" : ""} />
+          <span>${isSyncing ? "Syncing..." : pend > 0 ? `Sync (${pend})` : p.T("Sync")}</span>
+        </button>
+      </div>
     </div>
 
     <!-- Alert Message Banner -->
     ${activeMsg && h`
-      <div class="badge off" style=${{ 
-        padding: "10px 14px", 
-        display: "flex", 
-        alignItems: "center", 
-        gap: 8, 
-        fontSize: 13,
-        lineHeight: 1.4,
-        borderRadius: "var(--radius)"
-      }}>
-        <${AlertCircle} size=${16} style=${{ flexShrink: 0 }} />
+      <div class="alert-banner err">
+        <${AlertCircle} size=${16} style=${{ flexShrink: 0, marginTop: 2 }} />
         <span>${activeMsg}</span>
       </div>
     `}
@@ -230,8 +208,8 @@ export function Prog(p) {
               onClick=${() => p.go("topics", { strand: idx, strand_id: s.strand_id })}
             >
               <!-- Header: Icon, Code & Title, Percentage Badge -->
-              <div class="row sp" style=${{ alignItems: "flex-start" }}>
-                <div class="row" style=${{ gap: 10, flex: 1 }}>
+              <div class="row sp" style=${{ alignItems: "flex-start", gap: 10 }}>
+                <div class="row" style=${{ gap: 10, flex: 1, minWidth: 0 }}>
                   <div class="strand-icon-box" style=${{ 
                     width: 38, 
                     height: 38, 
@@ -240,23 +218,23 @@ export function Prog(p) {
                   }}>
                     <${IconComponent} size=${19} />
                   </div>
-                  <div style=${{ flex: 1 }}>
-                    <div class="row" style=${{ gap: 6, marginBottom: 2 }}>
+                  <div style=${{ flex: 1, minWidth: 0 }}>
+                    <div class="row" style=${{ gap: 6, marginBottom: 2, flexWrap: "wrap" }}>
                       <span class="badge" style=${{ fontSize: 11, padding: "1px 7px" }}>
                         ${s.code || `LS${idx + 1}`}
                       </span>
-                      <b style=${{ fontSize: 13.5 }}>
+                      <b style=${{ fontSize: 13.5, wordBreak: "break-word" }}>
                         ${p.T(s.rawName || s.name.replace(/^Strand \d+ – /, ""))}
                       </b>
                     </div>
                     <span class="mu" style=${{ fontSize: 11.5 }}>
-                      ${hasAttempts ? `${s.attemptsCount} ${p.T("attempt recorded")}` : p.T("No attempts recorded yet")}
+                      ${hasAttempts ? `${s.attemptsCount} ${s.attemptsCount === 1 ? "attempt recorded" : "attempts recorded"}` : p.T("No attempts recorded yet")}
                     </span>
                   </div>
                 </div>
 
                 <!-- Score Badge -->
-                <span class="badge ${isPassing ? "on" : hasAttempts ? "" : ""}" style=${{ 
+                <span class="badge ${isPassing ? "on" : ""}" style=${{ 
                   fontSize: 12.5, 
                   fontWeight: 700, 
                   padding: "3px 9px",
@@ -317,14 +295,15 @@ export function Prog(p) {
       ` : h`
         <div style=${{ display: "flex", flexDirection: "column", gap: 8 }}>
           ${p.att.map(x => {
-            const setObj = (p.sets || []).find(s => s.id === x.set || s.id === x.question_set_id);
-            const title = setObj?.title || `Question Set #${String(x.set).slice(0, 8)}`;
+            const setId = x.set ?? x.question_set_id ?? x.set_id;
+            const setObj = (p.sets || []).find(s => s.id === setId) || (p.offlineBundles || []).find(b => b.id === setId);
+            const title = x.set_title || setObj?.title || "Practice Assessment";
             const pct = Math.round((x.score / (x.total || 1)) * 100);
             const isPassing = pct >= 75;
 
             return h`
               <div class="attempt-row">
-                <div style=${{ flex: 1, minWidth: 0 }}>
+                <div style=${{ flex: "1 1 150px", minWidth: 0 }}>
                   <b style=${{ 
                     fontSize: 13.5, 
                     display: "block", 
@@ -339,7 +318,7 @@ export function Prog(p) {
                   </span>
                 </div>
 
-                <div class="row" style=${{ gap: 8, flexShrink: 0 }}>
+                <div class="row" style=${{ gap: 6, flexShrink: 0, flexWrap: "wrap" }}>
                   <span class="badge ${isPassing ? "on" : "off"}" style=${{ fontSize: 12, fontWeight: 700 }}>
                     ${x.score}/${x.total} (${pct}%)
                   </span>
@@ -367,10 +346,10 @@ export function Prog(p) {
         padding: "12px 16px" 
       }}>
         <${Clock} size=${20} color="var(--pr)" style=${{ flexShrink: 0 }} />
-        <div style=${{ flex: 1 }}>
+        <div style=${{ flex: 1, minWidth: 0 }}>
           <b style=${{ fontSize: 13, display: "block" }}>Offline Assessments Saved Locally</b>
-          <span class="mu" style=${{ fontSize: 12 }}>
-            ${pend} assessment${pend > 1 ? "s" : ""} recorded in IndexedDB. Will upload automatically on internet reconnect.
+          <span class="mu" style=${{ fontSize: 12, display: "block", lineHeight: 1.4 }}>
+            ${pend} assessment${pend > 1 ? "s" : ""} saved locally. ${p.online ? "Tap Sync above to upload now." : "Will upload automatically when internet reconnects."}
           </span>
         </div>
       </div>

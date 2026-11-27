@@ -236,12 +236,12 @@ export function Score(p) {
     </div>
 
     <!-- Action Buttons -->
-    <div class="row" style=${{ gap: 12 }}>
+    <div class="row" style=${{ gap: 12, flexWrap: "wrap" }}>
       <button 
         type="button" 
         class="btn" 
-        style=${{ flex: 1, padding: "12px", borderRadius: 9999 }}
-        onClick=${() => p.go("quiz", { set: set.id || r.set, n: Math.random() })}
+        style=${{ flex: "1 1 160px", padding: "12px", borderRadius: 9999 }}
+        onClick=${() => p.go("quiz", { set: set.id ?? r.set, strand_id: r.strand_id, n: Math.random() })}
       >
         <${RotateCcw} size=${16} />
         <span>${p.T("Retake Assessment")}</span>
@@ -249,7 +249,7 @@ export function Score(p) {
       <button 
         type="button" 
         class="btn p" 
-        style=${{ flex: 1, padding: "12px", borderRadius: 9999 }}
+        style=${{ flex: "1 1 160px", padding: "12px", borderRadius: 9999 }}
         onClick=${() => p.go("home")}
       >
         <${Home} size=${16} />

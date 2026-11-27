@@ -783,13 +783,18 @@
 ------------------------------------------------------------- */
 .ios-bottom-cta-wrap {
   position: sticky;
-  bottom: 80px;
+  bottom: 84px;
   width: 100%;
   display: flex;
   justify-content: center;
   z-index: 50;
   padding: 0 16px;
   box-sizing: border-box;
+  transition: bottom 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ios-bottom-cta-wrap.dock-hidden {
+  bottom: 20px;
 }
 
 .ios-bottom-cta-btn {
@@ -1041,10 +1046,36 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
   transition: var(--transition);
 }
 
 .attempt-row:hover {
   background: var(--sf);
+}
+
+/* Position toast cleanly above the floating bottom navigation dock */
+.student-root .toast {
+  bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 360px) {
+  .ios-content {
+    padding: 12px 12px 92px 12px;
+  }
+  .ios-hero-card,
+  .ios-ai-card,
+  .ios-strand-card,
+  .prog-hero,
+  .prog-strand-card {
+    padding: 16px;
+  }
+  .ios-hero-glass-bar {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+  .attempt-row {
+    padding: 12px 14px;
+  }
 }

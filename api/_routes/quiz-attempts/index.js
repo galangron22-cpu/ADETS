@@ -46,6 +46,7 @@ export default async function handler(req, res) {
       attempt_id: a.attempt_id,
       set_id: a.question_set_id,
       set_title: a.question_sets?.title,
+      strand_id: a.question_sets?.strand_id || null,
       strand_code: a.question_sets?.learning_strands?.code,
       strand_name: a.question_sets?.learning_strands?.name,
       score: a.score,

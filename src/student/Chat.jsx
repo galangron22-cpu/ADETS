@@ -157,8 +157,8 @@ export function Chat(p) {
       `}
 
       ${warn && h`
-        <div class="badge off" style=${{ alignSelf: "center", padding: "8px 14px", gap: 6 }}>
-          <${AlertCircle} size=${14} />
+        <div class="alert-banner err" style=${{ alignSelf: "center", maxWidth: 460 }}>
+          <${AlertCircle} size=${15} style=${{ flexShrink: 0, marginTop: 2 }} />
           <span>${warn}</span>
         </div>
       `}

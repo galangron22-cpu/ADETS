@@ -194,16 +194,8 @@ export function Login(p) {
 
       <!-- Error Banner -->
       ${err && h`
-        <div class="badge off" style=${{ 
-          padding: "10px 14px", 
-          borderRadius: "var(--radius)", 
-          display: "flex", 
-          alignItems: "center", 
-          gap: 8,
-          fontSize: 13,
-          lineHeight: 1.4
-        }}>
-          <${AlertCircle} size=${16} style=${{ flexShrink: 0 }} />
+        <div class="alert-banner err">
+          <${AlertCircle} size=${16} style=${{ flexShrink: 0, marginTop: 2 }} />
           <span>${err}</span>
         </div>
       `}

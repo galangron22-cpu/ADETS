@@ -32,7 +32,10 @@ import {
   Sparkles,
   Layers,
   Search,
-  X
+  X,
+  Wifi,
+  WifiOff,
+  RefreshCw
 } from "../shared/icons.js";
 
 // Distinctive icons for each of the 5 ALS Strands
@@ -175,7 +178,7 @@ export function StudentLayout(p) {
         }
         return false;
       });
-      return a.length ? Math.round(a.reduce((t, x) => t + (x.score / x.total), 0) / a.length * 100) : 0;
+      return a.length ? Math.round(a.reduce((t, x) => t + (x.score / (x.total || 1)), 0) / a.length * 100) : 0;
     });
 
     const overallProgress = pr.length ? Math.round(pr.reduce((a, b) => a + b, 0) / pr.length) : 0;
@@ -206,13 +209,21 @@ export function StudentLayout(p) {
             style=${{ height: 34 }}
           />
         </div>
-        <div 
-          class="ios-avatar-btn" 
-          style=${{ width: 40, height: 40, fontSize: 15 }}
-          onClick=${() => setShowProfile(true)} 
-          title="Open Profile & Settings"
-        >
-          ${(user || "L").charAt(0).toUpperCase()}
+        <div class="row" style=${{ gap: 8 }}>
+          ${!online && h`
+            <span class="badge off" style=${{ fontSize: 11, padding: "3px 8px" }}>
+              <${WifiOff} size=${11} />
+              <span>${T("Offline")}</span>
+            </span>
+          `}
+          <div 
+            class="ios-avatar-btn" 
+            style=${{ width: 40, height: 40, fontSize: 15 }}
+            onClick=${() => setShowProfile(true)} 
+            title="Open Profile & Settings"
+          >
+            ${(user || "L").charAt(0).toUpperCase()}
+          </div>
         </div>
       </div>
 
@@ -257,7 +268,7 @@ export function StudentLayout(p) {
 
           <!-- Bottom Floating Frosted Glass Bar -->
           <div class="ios-hero-glass-bar">
-            <div>
+            <div style=${{ minWidth: 0 }}>
               <span style=${{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.05em", color: "#94a3b8", fontWeight: 700, display: "block" }}>
                 Overall ALS Benchmark
               </span>
@@ -287,10 +298,13 @@ export function StudentLayout(p) {
             alt="Alamin AI Study Assistant" 
             class="ios-ai-avatar" 
           />
-          <div style=${{ flex: 1 }}>
-            <div class="row sp" style=${{ marginBottom: 4 }}>
+          <div style=${{ flex: 1, minWidth: 0 }}>
+            <div class="row sp" style=${{ marginBottom: 4, gap: 8 }}>
               <b style=${{ fontSize: 15, color: "var(--tx)", letterSpacing: "normal" }}>Alamin AI Tutor</b>
-              <span class="badge on" style=${{ fontSize: 11, padding: "2px 8px" }}>Online</span>
+              <span class="badge ${online ? "on" : "off"}" style=${{ fontSize: 11, padding: "2px 8px" }}>
+                <${online ? Wifi : WifiOff} size=${11} />
+                <span>${online ? T("Online") : T("Offline")}</span>
+              </span>
             </div>
             <p style=${{ margin: 0, fontSize: 12.5, color: "var(--mu)", lineHeight: 1.4 }}>
               ${T("Need help understanding a lesson? Ask any ALS topic.")}
@@ -389,11 +403,11 @@ export function StudentLayout(p) {
               onClick=${() => go("topics", { strand: strandIndex, strand_id: s.strand_id })}
             >
               <div class="row sp" style=${{ alignItems: "flex-start" }}>
-                <div class="row" style=${{ gap: 12, flex: 1 }}>
+                <div class="row" style=${{ gap: 12, flex: 1, minWidth: 0 }}>
                   <div class="strand-icon-box">
                     <${IconComponent} size=${22} />
                   </div>
-                  <div style=${{ flex: 1 }}>
+                  <div style=${{ flex: 1, minWidth: 0 }}>
                     <span class="badge" style=${{ fontSize: 11, padding: "2px 8px" }}>
                       ${s.code || `LS${strandIndex + 1}`}
                     </span>
@@ -437,6 +451,7 @@ export function StudentLayout(p) {
     );
 
     const topicList = TOP[p.ctx.strand] || ["General Review", "Practice Test"];
+    const readySet = online ? strandSets[0] : strandSets.find(s => saved.includes(s.id));
 
     body = h`
       <!-- iOS Detail Header (Back button, Title, Right Action) -->
@@ -450,9 +465,9 @@ export function StudentLayout(p) {
           <${ChevronLeft} size=${20} />
         </button>
 
-        <div style=${{ textAlign: "center" }}>
+        <div style=${{ textAlign: "center", flex: 1, minWidth: 0, padding: "0 8px" }}>
           <span class="badge" style=${{ fontSize: 11.5, padding: "2px 8px" }}>${st.code}</span>
-          <b style=${{ fontSize: 16, display: "block", marginTop: 2, letterSpacing: "normal" }}>${T(st.name.replace(/^Strand \d+ – /, ""))}</b>
+          <b style=${{ fontSize: 16, display: "block", marginTop: 2, letterSpacing: "normal" }}>${T(st.rawName || st.name.replace(/^Strand \d+ – /, ""))}</b>
         </div>
 
         <button 
@@ -503,19 +518,22 @@ export function StudentLayout(p) {
               <${Layers} size=${36} style=${{ margin: "0 auto 10px auto", opacity: 0.5 }} />
               <b style=${{ fontSize: 16 }}>${T("No question sets available yet")}</b>
               <p style=${{ margin: "6px 0 0 0", fontSize: 13.5 }}>
-                ${T("New practice sets will appear here once published by your ALS Teacher.")}
+                ${online
+                  ? T("New practice sets will appear here once published by your ALS Teacher.")
+                  : "You are offline. Reconnect to download published reviewer sets for offline study."}
               </p>
             </div>
           ` : strandSets.map(s => {
             const isSaved = saved.includes(s.id);
-            const questionCount = s.question_count || 10;
+            const isDownloading = p.downloadingId === s.id;
+            const questionCount = s.question_count ?? 0;
 
             return h`
-              <div class="card" style=${{ display: "flex", flexDirection: "column", gap: 12, borderRadius: 22, padding: "20px" }}>
-                <div class="row sp">
-                  <div>
-                    <b style=${{ fontSize: 16, display: "block", letterSpacing: "normal" }}>${s.title}</b>
-                    <span class="mu" style=${{ fontSize: 12.5 }}>
+              <div class="card" style=${{ display: "flex", flexDirection: "column", gap: 12, borderRadius: 22, padding: "18px 20px" }}>
+                <div class="row sp" style=${{ alignItems: "flex-start", gap: 10 }}>
+                  <div style=${{ flex: 1, minWidth: 0 }}>
+                    <b style=${{ fontSize: 16, display: "block", letterSpacing: "normal", lineHeight: 1.35, wordBreak: "break-word" }}>${s.title}</b>
+                    <span class="mu" style=${{ fontSize: 12.5, display: "block", marginTop: 2 }}>
                       ${T("Version")} ${s.ver || 1} · ${questionCount} ${T("Questions")}
                     </span>
                   </div>
@@ -525,16 +543,19 @@ export function StudentLayout(p) {
                       <span>${T("Offline Ready")}</span>
                     </span>
                   ` : h`
-                    <span class="badge" style=${{ fontSize: 11.5 }}>${T("Online Only")}</span>
+                    <span class="badge ${online ? "" : "off"}" style=${{ fontSize: 11.5 }}>
+                      <${online ? Wifi : WifiOff} size=${11} />
+                      <span>${online ? T("Online Only") : T("Offline")}</span>
+                    </span>
                   `}
                 </div>
 
-                <div class="row" style=${{ gap: 10, marginTop: 4 }}>
+                <div class="row" style=${{ gap: 10, marginTop: 4, flexWrap: "wrap" }}>
                   ${isSaved ? h`
                     <button 
                       type="button"
                       class="btn d" 
-                      style=${{ flex: 1, borderRadius: 9999, padding: "10px" }} 
+                      style=${{ flex: "1 1 115px", borderRadius: 9999, padding: "10px 12px", fontSize: 13 }} 
                       onClick=${() => p.removeSet ? p.removeSet(s.id) : p.setSaved(saved.filter(x => x !== s.id))}
                     >
                       <${Trash2} size=${15} />
@@ -544,20 +565,20 @@ export function StudentLayout(p) {
                     <button 
                       type="button"
                       class="btn" 
-                      style=${{ flex: 1, borderRadius: 9999, padding: "10px" }} 
-                      disabled=${!online} 
-                      onClick=${() => p.downloadSet ? p.downloadSet(s.id) : (p.setSaved([...saved, s.id]), p.say("Downloaded for offline"))}
+                      style=${{ flex: "1 1 140px", borderRadius: 9999, padding: "10px 12px", fontSize: 13 }} 
+                      disabled=${!online || isDownloading} 
+                      onClick=${() => p.downloadSet?.(s.id)}
                     >
-                      <${DownloadCloud} size=${15} />
-                      <span>${T("Download for Offline")}</span>
+                      <${isDownloading ? RefreshCw : DownloadCloud} size=${15} className=${isDownloading ? "spin" : ""} />
+                      <span>${isDownloading ? "Downloading..." : T("Download for Offline")}</span>
                     </button>
                   `}
                   <button 
                     type="button"
                     class="btn p" 
-                    style=${{ flex: 1.2, borderRadius: 9999, padding: "10px 16px" }} 
+                    style=${{ flex: "1.2 1 130px", borderRadius: 9999, padding: "10px 16px", fontSize: 13.5 }} 
                     disabled=${!isSaved && !online} 
-                    onClick=${() => go("quiz", { set: s.id, strand_id: st.strand_id })}
+                    onClick=${() => go("quiz", { set: s.id, strand_id: s.strand_id || st.strand_id })}
                   >
                     <span>${T("Start Quiz")}</span>
                     <${ArrowRight} size=${15} />
@@ -570,12 +591,12 @@ export function StudentLayout(p) {
       `}
 
       <!-- Bottom Floating CTA Button -->
-      ${strandSets.length > 0 && h`
-        <div class="ios-bottom-cta-wrap">
+      ${readySet && h`
+        <div class="ios-bottom-cta-wrap ${dockHidden ? "dock-hidden" : ""}">
           <button 
             type="button" 
             class="ios-bottom-cta-btn" 
-            onClick=${() => go("quiz", { set: strandSets[0].id, strand_id: st.strand_id })}
+            onClick=${() => go("quiz", { set: readySet.id, strand_id: readySet.strand_id || st.strand_id })}
           >
             <span>Start Practice Assessment</span>
             <${ArrowRight} size=${18} />
